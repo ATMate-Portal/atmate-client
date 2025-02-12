@@ -1,14 +1,22 @@
 import { useState } from "react";
 import "./App.css";
-import Sidebar from './components/Nav/Sidebar';
+import { BrowserRouter } from "react-router-dom";
+import Router from "./routes/Router";
+import Sidebar from './components/layout/Sidebar';
 
 
 
-const App: React.FC = () => {
+function App() {
   return (
-      <Sidebar />
-      
+    <BrowserRouter>
+      <div className="flex h-screen">
+        <Sidebar />
+        <main className="flex-1 p-4">
+          <Router />
+        </main>
+      </div>
+    </BrowserRouter>
   );
-};
+}
 
 export default App;
