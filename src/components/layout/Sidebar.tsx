@@ -5,16 +5,20 @@ import "bootstrap/dist/css/bootstrap.min.css";
 import "./Sidebar.css";
 
 const Sidebar: React.FC = () => {
-  const location = useLocation(); // Obtém a rota atual para destacar o link ativo
+  const location = useLocation();
 
   return (
     <div className="sidebar">
+      {/* Título da aplicação */}
+      <h1 className="sidebar-title">ATMATE</h1>
+
       {/* Imagem de perfil */}
       <div className="profile-container">
         <img src="/profile_pic.png" alt="Perfil" className="profile-pic" />
       </div>
 
-      <Nav vertical>
+      {/* Navegação principal */}
+      <Nav vertical className="nav-menu">
         <NavItem>
           <Link to="/" className={`nav-link-custom ${location.pathname === "/" ? "active" : ""}`}>
             <i className="fas fa-home"></i> Página Principal
@@ -30,6 +34,10 @@ const Sidebar: React.FC = () => {
             <i className="fas fa-user"></i> Gerir Clientes
           </Link>
         </NavItem>
+      </Nav>
+
+      {/* Opções no fundo */}
+      <Nav vertical className="bottom-options">
         <NavItem>
           <Link to="/settings" className={`nav-link-custom ${location.pathname === "/settings" ? "active" : ""}`}>
             <i className="fas fa-cog"></i> Definições
