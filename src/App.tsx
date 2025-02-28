@@ -9,9 +9,11 @@ import Sidebar from './components/layout/Sidebar';
 function App() {
   return (
     <BrowserRouter>
-      <div className="flex h-screen">
+      <div className="flex min-h-screen">
+
         <Sidebar />
-        <main className="flex-1 p-4">
+        <main className="flex-1 p-4 max-w-4xl mx-auto">
+
           <Router />
         </main>
       </div>
