@@ -1,0 +1,40 @@
+.custom-table {
+  width: 100%;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+}
+
+.custom-table th {
+  background-color: #ABC3E8;
+  color: #322D2D;
+  font-weight: bold;
+  padding: 12px;
+  text-align: center;
+}
+
+.custom-table td {
+  padding: 10px;
+  text-align: center;
+  color: #322D2D;
+}
+
+.custom-table tr:nth-child(even) {
+  background-color: #e3eaf5;
+}
+
+.custom-table tr:hover {
+  background-color: #d1dbf0;
+}
+
+.accordion-container {
+    width: 100%;         /* Ocupa toda a largura possível */
+    max-width: 1200px;    /* Define um máximo para evitar que fique muito grande */
+    min-width: 1000px;    /* Nunca será menor que 400px */
+    margin: 0 auto;      /* Centraliza */
+  }
+  @media (max-width: 1500px) {
+    .accordion-container {
+      min-width: 90%; /* Em ecrãs pequenos, ocupa quase toda a largura */
+    }
+  }
+  
