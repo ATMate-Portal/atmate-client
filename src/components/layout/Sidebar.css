@@ -1,8 +1,7 @@
-/* Sidebar.css */
 .sidebar {
   width: 250px;
   height: 100vh;
-  background-color: #0d6efd; /* Azul Bootstrap */
+  background-color: #ABC3E8; /* Azul Bootstrap */
   padding: 1.5rem 1rem;
   position: fixed;
   left: 0;
@@ -11,6 +10,16 @@
   flex-direction: column;
   align-items: center;
   box-shadow: 2px 0 5px rgba(0, 0, 0, 0.2);
+}
+
+/* Título da sidebar */
+.sidebar-title {
+  color: #322D2D;
+  font-size: 1.8rem;
+  font-weight: bold;
+  margin-bottom: 1rem;
+  text-transform: uppercase;
+  text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.3);
 }
 
 /* Container da imagem de perfil */
@@ -26,13 +35,25 @@
 .profile-pic {
   width: 80px;
   height: 80px;
-  border-radius: 50%; /* Deixa a imagem circular */
-  object-fit: cover; /* Mantém a proporção da imagem */
-  border: 3px solid white; /* Borda branca ao redor da imagem */
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid #322D2D;
+}
+
+.nav-menu {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+/* Ajusta as opções inferiores para ficarem no fundo */
+.bottom-options {
+  margin-top: auto;
+  width: 100%;
 }
 
 .nav-link-custom {
-  color: white;
+  color: #322D2D;
   font-weight: 600;
   padding: 0.75rem 1rem;
   border-radius: 8px;
@@ -40,22 +61,45 @@
   text-decoration: none;
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  justify-content: center; /* Centraliza o conteúdo */
   width: 100%;
   transition: all 0.3s ease-in-out;
+  position: relative;
+  font-size: 1.1rem;
 }
 
 .nav-link-custom i {
-  font-size: 1.2rem;
+  font-size: 1.3rem;
+  position: absolute;
+  left: 10px; /* Mantém o ícone alinhado à esquerda */
 }
 
 .nav-link-custom:hover {
-  color: white;
-  background-color: #0b5ed7;
+  color: #322D2D;
+  background-color: #8FA8D6; 
   transform: scale(1.05);
 }
 
 .nav-link-custom.active {
-  background-color: #084298;
+  background-color: #6D89B8; 
   transform: scale(1.05);
+}
+
+/* Barra decorativa entre a primeira opção e a imagem de perfil */
+.divider {
+  width: 80%;
+  height: 4px;
+  background: #322D2D; /* Degradê azul-escuro para o tom do texto */
+  border-radius: 2px;
+  margin: 1rem 0; /* Espaçamento entre a barra e os elementos ao redor */
+  box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.2); /* Sombra suave para realce */
+}
+
+/* Barra horizontal entre os itens */
+.nav-divider {
+  width: 80%; /* Garante que a largura seja a mesma da barra superior */
+  height: 2px; /* Aumenta ligeiramente a espessura para melhor visibilidade */
+  background-color: #7d8496; /* Cor mais clara para contraste */
+  margin: 0.75rem auto; /* Centraliza horizontalmente */
+  border: none;
 }
