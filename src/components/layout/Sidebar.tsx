@@ -17,8 +17,8 @@ const Sidebar: React.FC = () => {
       {/* Título da aplicação 
       <h1 className="sidebar-title">ATMATE</h1>*/}
 
-      {/* Barra decorativa */}
-      <div className="divider"></div>
+      {/* Barra decorativa 
+      <div className="divider"></div>*/}
 
       {/* Navegação principal */}
       <Nav vertical className="nav-menu">
