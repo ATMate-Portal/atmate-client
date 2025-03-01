@@ -11,11 +11,11 @@ const Sidebar: React.FC = () => {
     <div className="sidebar">
       {/* Imagem de perfil */}
       <div className="profile-container">
-        <img src="/logo_azul.svg" alt="Perfil" />
+        <img src="/logo_azul.svg" alt="Perfil"  />
       </div>
 
       {/* Título da aplicação */}
-      <h1 className="sidebar-title">ATMATE</h1>
+      //<h1 className="sidebar-title">ATMATE</h1>
 
       {/* Barra decorativa */}
       <div className="divider"></div>
