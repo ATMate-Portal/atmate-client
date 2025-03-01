@@ -11,7 +11,7 @@ const Sidebar: React.FC = () => {
     <div className="sidebar">
       {/* Imagem de perfil */}
       <div className="profile-container">
-        <img src="/logo_azul.svg" alt="Perfil" className="profile-pic" />
+        <img src="/logo_azul.svg" alt="Perfil" />
       </div>
 
       {/* Título da aplicação */}
