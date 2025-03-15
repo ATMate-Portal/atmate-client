@@ -26,7 +26,7 @@ const Home: React.FC = () => {
     const fetchClientTaxes = async () => {
       try {
         const response = await fetch(
-          "http://localhost:8180/atmate-gateway/tax/getUrgentTaxes?days=150"
+          "http://atmate.sytes.net:8180/atmate-gateway/tax/getUrgentTaxes?days=150"
         );
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
