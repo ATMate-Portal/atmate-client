@@ -118,7 +118,7 @@ const TaxTable: React.FC<TaxTableProps> = ({ taxes }) => {
             const parsedTaxData = JSON.parse(tax.taxData);
             return (
               <tr key={tax.taxId}>
-                <td>{parsedTaxData["Cat. IUC"]}</td>
+                <td>{tax.type}</td>
                 <td>{tax.amount}</td>
                 <td>{tax.paymentDeadline}</td>
                 <td>
