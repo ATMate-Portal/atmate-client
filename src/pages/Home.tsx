@@ -61,7 +61,7 @@ interface ClientAccordionItemProps {
 
 const ClientAccordionItem: React.FC<ClientAccordionItemProps> = ({ client, index }) => {
     const { clientId, clientName, taxes } = client;
-    const isUrgent = taxes[0]?.daysLeft <= 7;
+    const isUrgent = taxes[0]?.daysLeft <= 100;
 
     return (
       <div className="accordion-item" key={clientId}>
