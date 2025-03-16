@@ -80,7 +80,7 @@ const ClientAccordionItem: React.FC<ClientAccordionItemProps> = ({ client, index
                 <span className="ms-4 fs-3">{clientName}</span>
               </div>
               <span className="text-muted me-5">
-                {taxes[0]?.daysLeft} &nbsp;&nbsp; dias até expirar
+                {taxes[0]?.daysLeft} dias até expirar
               </span>
             </div>
           </button>
