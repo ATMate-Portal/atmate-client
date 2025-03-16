@@ -26,7 +26,7 @@ const Home: React.FC = () => {
     const fetchClientTaxes = async () => {
       try {
         const response = await fetch(
-          "http://atmate.sytes.net:8180/atmate-gateway/tax/getUrgentTaxes?days=150"
+          "http://atmate.sytes.net:8180/atmate-gateway/tax/getUrgentTaxes?days=250"
         );
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
@@ -80,7 +80,7 @@ const ClientAccordionItem: React.FC<ClientAccordionItemProps> = ({ client, index
                 <span className="ms-4 fs-3">{clientName}</span>
               </div>
               <span className="text-muted me-5">
-                {taxes[0]?.daysLeft} dias até expirar
+                {taxes[0]?.daysLeft} &nbsp;&nbsp; dias até expirar
               </span>
             </div>
           </button>
