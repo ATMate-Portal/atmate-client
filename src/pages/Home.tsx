@@ -123,7 +123,7 @@ const TaxTable: React.FC<TaxTableProps> = ({ taxes }) => {
                 <td>{tax.paymentDeadline}</td>
                 <td>
                   <i className="fas fa-clock"></i>
-                  &nbsp;&nbsp;
+                  &nbsp;&nbsp; 
                   <span className="text-muted font-weight-semibold">
                     {tax.daysLeft} dias até expirar
                   </span>
