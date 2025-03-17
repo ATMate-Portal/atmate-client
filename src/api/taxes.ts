@@ -1,6 +1,14 @@
 import api from "./axios";
 
-export async function getUrgentTaxes() {
-  const response = await api.get("/impostos");
-  return response.data;
-}
+/* PARA JÁ NÃO SE UTILIZA POIS USAMOS O HOOK
+   DEIXO AQUI COMENTADO PORQUE MAIS TARDE PODE SER NECESSÁRIO TER CHAMADAS MAIS CONTROLADAS
+export const getUrgentTaxes = async (days: number) => {
+  try {
+    const response = await api.get(`atmate-gateway/tax/getUrgentTaxes?days=${days}`);
+    return response.data;
+  } catch (error) {
+    console.error("Erro ao obter impostos:", error);
+    throw error;
+  }
+};
+*/
