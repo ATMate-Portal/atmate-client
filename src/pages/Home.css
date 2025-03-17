@@ -1,15 +1,12 @@
 .custom-table {
   width: 100%;
   background-color: #f8f9fa;
-  border-radius: 8px;
 }
 
-.custom-table th {
-  background-color: #ABC3E8;
-  color: #322D2D;
+.custom-header {
   font-weight: bold;
-  padding: 12px;
   text-align: center;
+  border-bottom: 1px solid black;
 }
 
 .custom-table td {
@@ -28,13 +25,36 @@
 
 .accordion-container {
     width: 100%;         /* Ocupa toda a largura possível */
-    max-width: 1200px;    /* Define um máximo para evitar que fique muito grande */
-    min-width: 1000px;    /* Nunca será menor que 400px */
-    margin: 0 auto;      /* Centraliza */
+    max-width: 2000px;    /* Define um máximo para evitar que fique muito grande */
+    min-width: 1500px;    /* Nunca será menor que 400px */
   }
   @media (max-width: 1500px) {
     .accordion-container {
       min-width: 90%; /* Em ecrãs pequenos, ocupa quase toda a largura */
     }
   }
+
+  .search-bar {
+    display: flex;
+    align-items: center;
+    border-radius: 20px; /* Bordas arredondadas */
+    background-color: #e0e0e0; /* Cor de fundo similar à imagem */
+    padding: 8px 16px;
+    width: 300px; /* Ajuste a largura conforme necessário */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Sombra suave */
+  }
   
+  .search-bar input {
+    border: none;
+    outline: none;
+    background-color: transparent;
+    flex-grow: 1; /* Permite que o input cresça */
+    padding: 8px;
+    font-size: 16px;
+  }
+  
+  .search-icon {
+    font-size: 20px;
+    color: #555;
+    cursor: pointer;
+  }
