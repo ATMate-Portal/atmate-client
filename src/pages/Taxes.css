@@ -1,0 +1,54 @@
+.table-borderless th,
+.table-borderless td {
+  border-bottom: 1px solid #e9ecef; /* Adiciona apenas uma linha sutil entre as linhas */
+  padding: 0.75rem;
+}
+
+.table-borderless thead th {
+  border-bottom: 2px solid #e9ecef;
+}
+
+.table-hover tbody tr:hover {
+  background-color: #f8f9fa; /* Um hover suave */
+}
+
+.form-select.bg-light,
+.form-control.bg-light {
+  border: none !important;
+}
+
+.form-select:focus,
+.form-control:focus {
+  border-color: #ced4da !important;
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25) !important;
+}
+
+.btn-outline-secondary {
+  border-color: #6c757d;
+  color: #6c757d;
+}
+
+.btn-outline-secondary:hover {
+  background-color: #6c757d;
+  color: white;
+  border-color: #6c757d;
+}
+
+.cursor-pointer {
+  cursor: pointer;
+}
+
+.container-fluid {
+    width: 100% !important;
+    max-width: none !important;
+  }
+  
+.table-responsive {
+width: 100% !important;
+max-width: none !important;
+}
+
+.table {
+width: 100% !important;
+max-width: none !important;
+}

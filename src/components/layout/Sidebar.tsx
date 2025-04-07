@@ -40,7 +40,7 @@ const Sidebar: React.FC = () => {
               location.pathname === "/taxes" ? "active" : ""
             }`}
           >
-            <i className="fas fa-money-bill"></i> IMPOSTOS
+            <i className="fas fa-money-bill"></i> OBRIGAÇÕES FISCAIS
           </Link>
         </NavItem>
         <hr className="nav-divider" />

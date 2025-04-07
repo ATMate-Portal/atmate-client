@@ -12,7 +12,7 @@ function App() {
       <div className="flex min-h-screen">
 
         <Sidebar />
-        <main className="flex-1 p-4 max-w-4xl mx-auto">
+        <main className="">
 
           <Router />
         </main>
