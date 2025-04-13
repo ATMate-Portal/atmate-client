@@ -1,7 +1,7 @@
-import React, { useState, useEffect, ChangeEvent } from 'react';
+import React, { useState, useEffect, ChangeEvent, useCallback } from 'react';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faSearch, faSortUp, faSortDown, faInfoCircle } from '@fortawesome/free-solid-svg-icons';
+import { faSearch, faSortUp, faSortDown, faInfoCircle, faSyncAlt } from '@fortawesome/free-solid-svg-icons';
 import './Taxes.css';
 import useApi from '../hooks/useApi';
 
@@ -15,19 +15,33 @@ interface ObrigacaoFiscal {
 }
 
 const Taxes = () => {
-    const { data: obrigações, loading, error } = useApi<ObrigacaoFiscal[]>('atmate-gateway/tax/getTaxes');
+    const [lastUpdated, setLastUpdated] = useState<string | null>(null);
+    const [refreshing, setRefreshing] = useState(false);
+    const [refreshTrigger, setRefreshTrigger] = useState(0);
+    const apiUrl = `atmate-gateway/tax/getTaxes?refresh=${refreshTrigger}`;
+    const { data: obrigações, loading, error } = useApi<ObrigacaoFiscal[]>(apiUrl);
     const [searchTerm, setSearchTerm] = useState('');
-    const [filterType, setFilterType] = useState<string>('Todos'); // Alterado para string
-    const [tiposDeFiltro, setTiposDeFiltro] = useState<string[]>(['Todos']); // Novo estado para os tipos de filtro
+    const [filterType, setFilterType] = useState<string>('Todos');
+    const [tiposDeFiltro, setTiposDeFiltro] = useState<string[]>(['Todos']);
     const [sortBy, setSortBy] = useState<keyof ObrigacaoFiscal>('dataLimite');
     const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
     useEffect(() => {
         if (obrigações) {
-            const tipos = ['Todos', ...new Set(obrigações.map(o => o.tipo))]; // Extrai tipos únicos
+            const tipos = ['Todos', ...new Set(obrigações.map(o => o.tipo))];
             setTiposDeFiltro(tipos);
         }
-    }, [obrigações]); // Dependência em obrigações para atualizar quando os dados mudam
+        if (obrigações && obrigações.length > 0) {
+            const now = new Date();
+            setLastUpdated(`${now.toLocaleDateString()} ${now.toLocaleTimeString()}`);
+        }
+        setRefreshing(false);
+    }, [obrigações]);
+
+    const handleRefresh = useCallback(() => {
+        setRefreshing(true);
+        setRefreshTrigger(prev => prev + 1);
+    }, [setRefreshing, setRefreshTrigger]);
 
     const handleSearch = (event: ChangeEvent<HTMLInputElement>) => {
         setSearchTerm(event.target.value);
@@ -87,8 +101,8 @@ const Taxes = () => {
         } else if (sortBy === 'estado') {
             comparison = a.estado.localeCompare(b.estado);
         } else if (sortBy === 'clientName') {
-          comparison = a.clientName.localeCompare(b.clientName);
-      }
+            comparison = a.clientName.localeCompare(b.clientName);
+        }
         return sortDirection === 'asc' ? comparison : comparison * -1;
     });
 
@@ -106,6 +120,25 @@ const Taxes = () => {
 
     return (
         <div className="container-fluid mt-5">
+            
+          <div className="d-flex align-items-center">  
+            <div>
+                {lastUpdated && (
+                    <p className="text-muted mr-3">
+                        <FontAwesomeIcon
+                            icon={faSyncAlt}
+                            className="mr-2"
+                            style={{ cursor: 'pointer' }}
+                            onClick={handleRefresh}
+                            spin={refreshing}
+                        />
+                        &nbsp;
+                        Última atualização: {lastUpdated}
+                    </p>
+                )}
+                {!lastUpdated && <p className="text-muted mr-3">Aguardando dados...</p>}
+            </div>
+            </div>
             <div className="mb-3 d-flex justify-content-between align-items-center">
                 <div className="d-flex align-items-center w-100">
                     <div className="me-3">

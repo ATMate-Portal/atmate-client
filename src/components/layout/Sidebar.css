@@ -73,6 +73,7 @@
 .nav-link-custom i {
   font-size: 1.3rem;
   position: absolute;
+  word-wrap: break-word; /* ou overflow-wrap: break-word; */
   left: 10px; /* Mantém o ícone alinhado à esquerda */
 }
 
