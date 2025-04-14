@@ -120,7 +120,7 @@ const Clients = () => {
             ) : (
               sortedClients.map((client) => (
                 <tr key={client.id}>
-                  <td>{client.name}</td>
+                  <td className="text-start">{client.name}</td>
                   <td>{client.nif}</td>
                   <td>{client.associatedColaborator}</td>
                   <td>{client.gender}</td>
