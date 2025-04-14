@@ -5,7 +5,7 @@ import './Settings.css'; // Importa o ficheiro CSS personalizado
 function Settings() {
   return (
     <div className="container-fluid d-flex justify-content-center align-items-center mt-2">
-      <div className="card shadow-lg w-100 animate-fade-in"> {/* Added animation class */}
+      <div className="card shadow-lg animate-fade-in"> {/* Added animation class */}
         <div className="card-body p-5 p-md-4">
           <h1 className="mb-4 text-primary text-center">Definições</h1>
           <hr className="mb-4 border-primary" />
@@ -41,7 +41,7 @@ function Settings() {
                 <div className="form-check mb-2 custom-checkbox">
                   <input disabled className="form-check-input shadow-sm" type="checkbox" id="notificacoesPush" />
                   <label className="form-check-label" htmlFor="notificacoesPush">
-                    Receber notificações push
+                    Receber notificações mensagem
                   </label>
                 </div>
               </div>

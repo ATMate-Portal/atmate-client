@@ -61,15 +61,16 @@ const Taxes = () => {
     };
 
     const filteredObrigações = (obrigações || []).filter((obrigacao) => {
-        const searchRegex = new RegExp(searchTerm, 'i');
-        const typeMatch = filterType === 'Todos' || obrigacao.tipo === filterType;
-        const searchMatch = searchRegex.test(obrigacao.tipo) ||
-                            searchRegex.test(obrigacao.dataLimite) ||
-                            searchRegex.test(obrigacao.clientName) ||
-                            searchRegex.test(obrigacao.valor) ||
-                            searchRegex.test(obrigacao.estado);
-        return typeMatch && searchMatch;
-    });
+        const searchRegex = new RegExp(searchTerm, 'i');
+        const typeMatch = filterType === 'Todos' || obrigacao.tipo === filterType;
+        const searchMatch = searchRegex.test(obrigacao.identificadorUnico) || // Added this line
+                            searchRegex.test(obrigacao.tipo) ||
+                            searchRegex.test(obrigacao.dataLimite) ||
+                            searchRegex.test(obrigacao.clientName) ||
+                            searchRegex.test(obrigacao.valor) ||
+                            searchRegex.test(obrigacao.estado);
+        return typeMatch && searchMatch;
+    });
 
     const sortedObrigações = [...filteredObrigações].sort((a, b) => {
         let comparison = 0;
@@ -118,9 +119,8 @@ const Taxes = () => {
         return <div className="container mt-5 text-center">Erro ao obter as obrigações fiscais.</div>;
     }
 
-    return (
+    return (      
         <div className="container-fluid mt-5">
-            
           <div className="d-flex align-items-center">  
             <div>
                 {lastUpdated && (
@@ -139,32 +139,27 @@ const Taxes = () => {
                 {!lastUpdated && <p className="text-muted mr-3">Aguardando dados...</p>}
             </div>
             </div>
-            <div className="mb-3 d-flex justify-content-between align-items-center">
-                <div className="d-flex align-items-center w-100">
-                    <div className="me-3">
-                        <select
-                            className="form-select form-select-sm shadow-sm rounded-pill border-0 bg-light text-secondary w-auto"
-                            id="filterType"
-                            value={filterType}
-                            onChange={handleFilter}
-                        >
-                            {tiposDeFiltro.map(tipo => (
-                                <option key={tipo} value={tipo}>{tipo}</option>
-                            ))}
-                        </select>
+            <div className="mb-4 d-flex gap-2">
+                <select
+                    className="form-select form-select-sm rounded-md border-gray-300 text-gray-700 shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+                    id="filterType"
+                    value={filterType}
+                    onChange={handleFilter}
+                >
+                    {tiposDeFiltro.map(tipo => (
+                    <option key={tipo} value={tipo}>{tipo}</option>
+                    ))}
+                </select>
+                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
                     </div>
-                    <div className="input-group input-group-sm shadow-sm rounded-pill bg-light flex-grow-1">
-                        <span className="input-group-text border-0 bg-light text-secondary"><FontAwesomeIcon icon={faSearch} /></span>
-                        <input
-                            type="text"
-                            className="form-control border-0 bg-light text-secondary"
-                            id="searchInput"
-                            placeholder="Pesquisar..."
-                            value={searchTerm}
-                            onChange={handleSearch}
-                        />
-                    </div>
-                </div>
+                    <input
+                    type="text"
+                    className="form-control form-control-sm rounded-md border-gray-300 pl-10 text-gray-700 shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+                    id="searchInput"
+                    placeholder="Pesquisar..."
+                    value={searchTerm}
+                    onChange={handleSearch}
+                    />
             </div>
 
             <div className="table-container">

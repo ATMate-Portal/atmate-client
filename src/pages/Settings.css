@@ -1,18 +1,9 @@
-/* Import modern font */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-
-/* General reset and font */
-body {
-  font-family: 'Inter', sans-serif;
-  background: linear-gradient(135deg, #e0e7ff 0%, #f9fafb 100%); /* Subtle gradient background */
-}
 
 /* Centering the container */
 .container-fluid {
   justify-content: center;
   align-items: center;
-  padding: 20px;
-  min-height: 100vh; /* Full height for centering */
+  padding: 20px; /* Full height for centering */
 }
 
 /* Styling the card with a modern look */
@@ -119,15 +110,33 @@ hr.border-primary {
   transition: all 0.3s ease;
 }
 
-.form-select:focus,
+.form-select,
+:focus,
 .form-control:focus {
   border-color: #2563eb;
   box-shadow: 0 0 0 0.25rem rgba(37, 99, 235, 0.2);
   outline: none;
 }
 
+.form-select {
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  padding: 0.9rem;
+  font-size: 0.95rem;
+  background-color: #ffffff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+}
+
+.form-select:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 0.25rem rgba(37, 99, 235, 0.2);
+  outline: none;
+}
+
 /* Disabled inputs */
-.form-select:disabled,
+.select-settings    ,
+:disabled,
 .form-control:disabled,
 .form-check-input:disabled {
   background-color: #f3f4f6;
