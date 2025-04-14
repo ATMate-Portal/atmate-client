@@ -53,7 +53,7 @@ const Home: React.FC = () => {
   if (error) return <p>Erro ao obter dados.</p>;
 
   return (
-    <div className="container">
+    <div className="container animate-fade-in">
       <div className="d-flex align-items-center">
         <div>
           {lastUpdated && (
