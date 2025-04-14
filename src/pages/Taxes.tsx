@@ -120,7 +120,7 @@ const Taxes = () => {
     }
 
     return (      
-        <div className="container-fluid mt-5">
+        <div className="container-fluid mt-5 animate-fade-in">
           <div className="d-flex align-items-center">  
             <div>
                 {lastUpdated && (
