@@ -10,10 +10,15 @@ const Sidebar: React.FC = () => {
   return (
     <div className="sidebar">
       {/* Imagem de perfil */}
-      <div className="profile-container">
-        <img src="/logo_azul.svg" alt="Perfil"  />
-      </div>
+      <Link
+            to="/"
+          >
+            <div className="profile-container">
+              <img src="/logo_azul.svg" alt="Perfil"  />
+            </div>
+        </Link>
 
+      
       {/* Título da aplicação 
       <h1 className="sidebar-title">ATMATE</h1>*/}
 
@@ -40,7 +45,8 @@ const Sidebar: React.FC = () => {
               location.pathname === "/taxes" ? "active" : ""
             }`}
           >
-            <i className="fas fa-money-bill"></i> OBRIGAÇÕES FISCAIS
+            <i className="fas fa-money-bill"></i>
+            <span>OBRIG. FISCAIS</span>
           </Link>
         </NavItem>
         <hr className="nav-divider" />
@@ -51,7 +57,8 @@ const Sidebar: React.FC = () => {
               location.pathname === "/clients" ? "active" : ""
             }`}
           >
-            <i className="fas fa-user"></i> CLIENTES
+            <i className="fas fa-user"></i> 
+            CLIENTES
           </Link>
         </NavItem>
       </Nav>
@@ -68,7 +75,7 @@ const Sidebar: React.FC = () => {
             <i className="fas fa-cog"></i> DEFINIÇÕES
           </Link>
         </NavItem>
-        <NavItem>
+        { /* <NavItem>
           <Link
             to="/logout"
             className={`nav-link-custom ${
@@ -77,7 +84,7 @@ const Sidebar: React.FC = () => {
           >
             <i className="fas fa-sign-out-alt"></i> SAIR
           </Link>
-        </NavItem>
+        </NavItem>*/}
       </Nav>
     </div>
   );
