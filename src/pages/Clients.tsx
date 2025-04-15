@@ -44,13 +44,18 @@ const Clients = () => {
   };
 
   const filteredClients = (clients || []).filter((client) => {
-    const searchRegex = new RegExp(searchTerm, 'i');
+    const normalize = (str: string) =>
+      str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  
+    const normalizedSearch = normalize(searchTerm);
+  
     return (
-      searchRegex.test(client.name) ||
-      searchRegex.test(client.nif.toString()) ||
-      searchRegex.test(client.nationality)
+      normalize(client.name).includes(normalizedSearch) ||
+      normalize(client.nif.toString()).includes(normalizedSearch) ||
+      normalize(client.nationality).includes(normalizedSearch)
     );
   });
+  
 
   const sortedClients = [...filteredClients].sort((a, b) => {
     let comparison = 0;
