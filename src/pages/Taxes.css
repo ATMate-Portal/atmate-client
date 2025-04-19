@@ -168,27 +168,6 @@ body {
   margin-right: 1rem !important;
 }
 
-#filterType {
-  display: block;
-  width: 10% ;
-  padding: 0.375rem 2.25rem 0.375rem 0.75rem;
-  -moz-appearance: none;
-  -webkit-appearance: none;
-  appearance: none;
-  font-size: 1rem;
-  font-weight: 400;
-  line-height: 1.5;
-  color: #495057;
-  background-color: #fff;
-  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23343a40' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
-  background-repeat: no-repeat;
-  background-position: right 0.75rem center;
-  background-size: 16px 12px;
-  border: 1px solid #ced4da;
-  border-radius: 0.25rem;
-  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
-}
-
 .form-select-sm {
   padding-top: 0.25rem;
   padding-bottom: 0.25rem;
@@ -240,7 +219,7 @@ body {
 }
 
 .input-group-text {
-  max-width: 3%; /* Impede que o span cresça mais do que 10% */
+  max-width: 10%; /* Impede que o span cresça mais do que 10% */
   /* Manter outros estilos existentes do input-group-text */
 }
 
@@ -286,6 +265,10 @@ body {
   transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
 }
 
+.form-select-sm {
+  width: 165px; /* Ajuste este valor conforme necessário */
+  padding: 0.25rem 0.5rem; /* Mantém o padding, mas pode ajustar se quiser */
+}
 
 .form-control:focus {
   outline: 2px solid blue !important; /* Cor e estilo a seu gosto */
@@ -294,4 +277,60 @@ body {
 
 .flex-grow-1 {
   flex-grow: 1 !important;
+}
+
+.header-row {
+  display: flex;
+  justify-content: space-between; /* Garante que os elementos fiquem nos extremos */
+  align-items: center; /* Alinha verticalmente no centro, se necessário */
+  width: 100%; /* Ocupa toda a largura do contêiner pai */
+  margin-bottom: 1rem; /* Mantém o espaço inferior */
+}
+
+.left-column {
+  margin-left: 0; /* Garante que o texto fique o mais à esquerda possível */
+  margin-top: 2%;
+}
+
+.right-column {
+  margin-right: 0; /* Garante que o botão fique o mais à direita possível */
+}
+
+/* Garante que a tabela abaixo ocupe a mesma largura e fique alinhada */
+.table-container {
+  width: 100%; /* Mantém a tabela ocupando a largura total */
+  background-color: #fff;
+  border-radius: 15px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+  padding: 20px;
+  margin-left: 0; /* Remove qualquer margem à esquerda */
+  margin-right: 0; /* Remove qualquer margem à direita */
+}
+
+.search-icon {
+  position: absolute;
+  left: 0.75rem;
+  pointer-events: none;
+  color: #6c757d;
+}
+
+.search-bar-container {
+  width: 700px; /* Ajuste este valor conforme necessário */
+}
+
+.search-bar-container .form-control {
+  padding-left: 2.5rem; /* Ajuste o padding para acomodar o ícone de pesquisa */
+}
+
+.input-icon {
+  font-size: 1.5rem; /* Ajuste o tamanho conforme necessário */
+}
+
+.custom-modal .modal-content {
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.modal-title-colored {
+  color: #007bff;
 }

@@ -16,39 +16,50 @@ interface ObrigacaoFiscal {
 
 const Taxes = () => {
     const [lastUpdated, setLastUpdated] = useState<string | null>(null);
-    const [refreshing, setRefreshing] = useState(false);
+    const [isRefreshing, setIsRefreshing] = useState(false);
     const [refreshTrigger, setRefreshTrigger] = useState(0);
     const apiUrl = `atmate-gateway/tax/getTaxes?refresh=${refreshTrigger}`;
     const { data: obrigações, loading, error } = useApi<ObrigacaoFiscal[]>(apiUrl);
     const [searchTerm, setSearchTerm] = useState('');
     const [filterType, setFilterType] = useState<string>('Todos');
-    const [tiposDeFiltro, setTiposDeFiltro] = useState<string[]>(['Todos']);
+    const [tiposDeObrigacao, setTiposDeObrigacao] = useState<string[]>(['Todos']);
     const [sortBy, setSortBy] = useState<keyof ObrigacaoFiscal>('dataLimite');
+    const [fromDate, setFromDate] = useState<string>('');
+    const [toDate, setToDate] = useState<string>('');
+    const [estadoFilter, setEstadoFilter] = useState<string>('Todos');
     const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+    const [estadosDisponiveis, setEstadosDisponiveis] = useState<string[]>(['Todos']); // Novo estado para estados
 
     useEffect(() => {
         if (obrigações) {
-            const tipos = ['Todos', ...new Set(obrigações.map(o => o.tipo))];
-            setTiposDeFiltro(tipos);
+            const tiposUnicos = [...new Set(obrigações.map(o => o.tipo))];
+            setTiposDeObrigacao(['Todos', ...tiposUnicos]);
+
+            const estadosUnicos = [...new Set(obrigações.map(o => o.estado))];
+            setEstadosDisponiveis(['Todos', ...estadosUnicos]);
         }
         if (obrigações && obrigações.length > 0) {
             const now = new Date();
             setLastUpdated(`${now.toLocaleDateString()} ${now.toLocaleTimeString()}`);
         }
-        setRefreshing(false);
+        setIsRefreshing(false);
     }, [obrigações]);
 
     const handleRefresh = useCallback(() => {
-        setRefreshing(true);
+        setIsRefreshing(true);
         setRefreshTrigger(prev => prev + 1);
-    }, [setRefreshing, setRefreshTrigger]);
+    }, [setIsRefreshing, setRefreshTrigger]);
 
     const handleSearch = (event: ChangeEvent<HTMLInputElement>) => {
         setSearchTerm(event.target.value);
     };
 
-    const handleFilter = (event: ChangeEvent<HTMLSelectElement>) => {
+    const handleFilterType = (event: ChangeEvent<HTMLSelectElement>) => {
         setFilterType(event.target.value);
+    };
+
+    const handleFilterEstado = (event: ChangeEvent<HTMLSelectElement>) => {
+        setEstadoFilter(event.target.value);
     };
 
     const handleSort = (column: keyof ObrigacaoFiscal) => {
@@ -61,48 +72,60 @@ const Taxes = () => {
     };
 
     const filteredObrigações = (obrigações || []).filter((obrigacao) => {
-        const searchRegex = new RegExp(searchTerm, 'i');
-        const typeMatch = filterType === 'Todos' || obrigacao.tipo === filterType;
-        const searchMatch = searchRegex.test(obrigacao.identificadorUnico) || // Added this line
-                            searchRegex.test(obrigacao.tipo) ||
-                            searchRegex.test(obrigacao.dataLimite) ||
-                            searchRegex.test(obrigacao.clientName) ||
-                            searchRegex.test(obrigacao.valor) ||
-                            searchRegex.test(obrigacao.estado);
-        return typeMatch && searchMatch;
-    });
+        const searchRegex = new RegExp(searchTerm, 'i');
+        const typeMatch = filterType === 'Todos' || obrigacao.tipo === filterType;
+        const dateMatch =
+            (!fromDate || new Date(obrigacao.dataLimite) >= new Date(fromDate)) &&
+            (!toDate || new Date(obrigacao.dataLimite) <= new Date(toDate));
+        const estadoMatch = estadoFilter === 'Todos' || obrigacao.estado === estadoFilter;
+        const searchMatch = searchRegex.test(obrigacao.identificadorUnico) ||
+                            searchRegex.test(obrigacao.tipo) ||
+                            searchRegex.test(obrigacao.dataLimite) ||
+                            searchRegex.test(obrigacao.clientName) ||
+                            searchRegex.test(obrigacao.valor) ||
+                            searchRegex.test(obrigacao.estado);
+        return typeMatch && searchMatch && dateMatch && estadoMatch;
+    });
 
     const sortedObrigações = [...filteredObrigações].sort((a, b) => {
         let comparison = 0;
-        if (sortBy === 'identificadorUnico') {
-            comparison = a.identificadorUnico.localeCompare(b.identificadorUnico);
-        } else if (sortBy === 'tipo') {
-            comparison = a.tipo.localeCompare(b.tipo);
-        } else if (sortBy === 'dataLimite') {
-            const dateA = a.dataLimite ? new Date(a.dataLimite) : null;
-            const dateB = b.dataLimite ? new Date(b.dataLimite) : null;
-
-            if (dateA && dateB) {
-                comparison = dateA.getTime() - dateB.getTime();
-            } else if (dateA) {
-                comparison = 1;
-            } else if (dateB) {
-                comparison = -1;
-            } else {
-                comparison = 0;
-            }
-        } else if (sortBy === 'valor') {
-            const valorA = parseFloat(String(a.valor).replace(' €', '').replace('.', '').replace(',', '.'));
-            const valorB = parseFloat(String(b.valor).replace(' €', '').replace('.', '').replace(',', '.'));
-            if (typeof valorA === 'number' && !isNaN(valorA) && typeof valorB === 'number' && !isNaN(valorB)) {
-                comparison = valorA - valorB;
-            } else {
-                comparison = 0;
-            }
-        } else if (sortBy === 'estado') {
-            comparison = a.estado.localeCompare(b.estado);
-        } else if (sortBy === 'clientName') {
-            comparison = a.clientName.localeCompare(b.clientName);
+        switch (sortBy) {
+            case 'identificadorUnico':
+                comparison = a.identificadorUnico.localeCompare(b.identificadorUnico);
+                break;
+            case 'tipo':
+                comparison = a.tipo.localeCompare(b.tipo);
+                break;
+            case 'dataLimite':
+                const dateA = a.dataLimite ? new Date(a.dataLimite) : null;
+                const dateB = b.dataLimite ? new Date(b.dataLimite) : null;
+                if (dateA && dateB) {
+                    comparison = dateA.getTime() - dateB.getTime();
+                } else if (dateA) {
+                    comparison = 1;
+                } else if (dateB) {
+                    comparison = -1;
+                } else {
+                    comparison = 0;
+                }
+                break;
+            case 'valor':
+                const valorA = parseFloat(String(a.valor).replace(' €', '').replace('.', '').replace(',', '.'));
+                const valorB = parseFloat(String(b.valor).replace(' €', '').replace('.', '').replace(',', '.'));
+                if (typeof valorA === 'number' && !isNaN(valorA) && typeof valorB === 'number' && !isNaN(valorB)) {
+                    comparison = valorA - valorB;
+                } else {
+                    comparison = 0;
+                }
+                break;
+            case 'estado':
+                comparison = a.estado.localeCompare(b.estado);
+                break;
+            case 'clientName':
+                comparison = a.clientName.localeCompare(b.clientName);
+                break;
+            default:
+                break;
         }
         return sortDirection === 'asc' ? comparison : comparison * -1;
     });
@@ -119,18 +142,18 @@ const Taxes = () => {
         return <div className="container mt-5 text-center">Erro ao obter as obrigações fiscais.</div>;
     }
 
-    return (      
+    return (
         <div className="container-fluid mt-5 animate-fade-in">
-          <div className="d-flex align-items-center">  
-            <div>
+
+
+            <div className="d-flex justify-content-between align-items-center" onClick={handleRefresh}>
                 {lastUpdated && (
                     <p className="text-muted mr-3">
                         <FontAwesomeIcon
                             icon={faSyncAlt}
                             className="mr-2"
                             style={{ cursor: 'pointer' }}
-                            onClick={handleRefresh}
-                            spin={refreshing}
+                            spin={isRefreshing}
                         />
                         &nbsp;
                         Última atualização: {lastUpdated}
@@ -138,28 +161,69 @@ const Taxes = () => {
                 )}
                 {!lastUpdated && <p className="text-muted mr-3">Aguardando dados...</p>}
             </div>
-            </div>
-            <div className="mb-4 d-flex gap-2">
-                <select
-                    className="form-select form-select-sm rounded-md border-gray-300 text-gray-700 shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
-                    id="filterType"
-                    value={filterType}
-                    onChange={handleFilter}
-                >
-                    {tiposDeFiltro.map(tipo => (
-                    <option key={tipo} value={tipo}>{tipo}</option>
-                    ))}
-                </select>
-                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+
+            <div className="d-flex justify-content-between align-items-center mb-3">
+                {/* Filtros à esquerda */}
+                <div className="d-flex gap-2 align-items-center">
+                    <div className="d-flex gap-2 align-items-center">
+                        <label htmlFor="fromDate" className="form-label m-0 text-secondary small">De:</label>
+                        <input
+                            type="date"
+                            className="form-control form-control-sm"
+                            value={fromDate}
+                            onChange={(e) => setFromDate(e.target.value)}
+                            id="fromDate"
+                        />
                     </div>
-                    <input
-                    type="text"
-                    className="form-control form-control-sm rounded-md border-gray-300 pl-10 text-gray-700 shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
-                    id="searchInput"
-                    placeholder="Pesquisar..."
-                    value={searchTerm}
-                    onChange={handleSearch}
-                    />
+                    <div className="d-flex gap-2 align-items-center">
+                        <label htmlFor="toDate" className="form-label m-0 text-secondary small">Até:</label>
+                        <input
+                            type="date"
+                            className="form-control form-control-sm"
+                            value={toDate}
+                            onChange={(e) => setToDate(e.target.value)}
+                            id="toDate"
+                        />
+                    </div>
+                    <select
+                        className="form-select form-select-sm"
+                        value={estadoFilter}
+                        onChange={handleFilterEstado}
+                    >
+                        <option value="Todos">Estados</option>
+                        {estadosDisponiveis.slice(1).map(estado => (
+                            <option key={estado} value={estado}>{estado}</option>
+                        ))}
+                    </select>
+                    <select
+                        className="form-select form-select-sm rounded-md border-gray-300 text-gray-700 shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+                        id="filterType"
+                        value={filterType}
+                        onChange={handleFilterType}
+                    >
+                        <option value="Todos">Tipo</option>
+                        {tiposDeObrigacao.slice(1).map(tipo => (
+                            <option key={tipo} value={tipo}>{tipo}</option>
+                        ))}
+                    </select>
+                </div>
+
+                {/* Barra de pesquisa à direita */}
+                <div className="d-flex justify-content-end">
+                    <div className="position-relative d-flex align-items-center search-bar-container">
+                        <div className="position-absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none search-icon">
+                            <FontAwesomeIcon icon={faSearch} className="text-gray-400" />
+                        </div>
+                        <input
+                            type="text"
+                            className="form-control form-control-sm"
+                            id="searchInput"
+                            placeholder="Pesquisar..."
+                            value={searchTerm}
+                            onChange={handleSearch}
+                        />
+                    </div>
+                </div>
             </div>
 
             <div className="table-container">

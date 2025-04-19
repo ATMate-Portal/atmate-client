@@ -7,14 +7,21 @@ interface ApiCallOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'DELETE';
   headers?: Record<string, string>;
   body?: any;
+  enabled?: boolean; // nova flag opcional
 }
 
 const useApi = <T,>(endpoint: string, options: ApiCallOptions = {}) => {
   const [data, setData] = useState<T | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    const shouldFetch = options.enabled !== false && endpoint;
+
+    if (!shouldFetch) {
+      return;
+    }
+
     const fetchData = async () => {
       const { method = 'GET', headers, body } = options;
       const config: AxiosRequestConfig = {
@@ -25,8 +32,10 @@ const useApi = <T,>(endpoint: string, options: ApiCallOptions = {}) => {
       };
 
       try {
+        setLoading(true);
         const response = await axios<T>(config);
         setData(response.data);
+        setError(null);
       } catch (err: any) {
         setError(err.message || "Erro ao buscar dados da API");
       } finally {
@@ -35,7 +44,7 @@ const useApi = <T,>(endpoint: string, options: ApiCallOptions = {}) => {
     };
 
     fetchData();
-  }, [endpoint, JSON.stringify(options)]); // Dependência em options para refazer a chamada se as opções mudarem
+  }, [endpoint, JSON.stringify(options)]); // refaz a chamada se endpoint ou options mudarem
 
   return { data, loading, error };
 };

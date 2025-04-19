@@ -1,79 +1,99 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './Settings.css';
-import axios from 'axios'; // Importe o axios diretamente
+import useApi from '../hooks/useApi';
+import axios from 'axios';
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
+interface ParamsDTO {
+  warningDays: string;
+  urgencyDays: string;
+}
+
 function Settings() {
-  const [nif, setNif] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const [warningDays, setWarningDays] = useState('');
+  const [urgencyDays, setUrgencyDays] = useState('');
   const [error, setError] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState('');
+  const [saveLoading, setSaveLoading] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState<string | null>(null);
 
-  const nifMaxLength = 9;
+  // Fetch current parameters from API
+  const { data: params, loading: paramsLoading, error: paramsError } = useApi<ParamsDTO>('atmate-gateway/config/getParams');
 
-  const handleNifChange = (event: any) => {
-    const onlyDigits = event.target.value.replace(/\D/g, '');
-    if (onlyDigits.length <= nifMaxLength) {
-      setNif(onlyDigits);
+  // Update state with fetched parameters
+  useEffect(() => {
+    if (params) {
+      if (params.warningDays && /^\d+$/.test(params.warningDays)) {
+        setWarningDays(params.warningDays);
+      }
+      if (params.urgencyDays && /^\d+$/.test(params.urgencyDays)) {
+        setUrgencyDays(params.urgencyDays);
+      }
+    }
+  }, [params]);
+
+  const handleWarningDaysChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const value = event.target.value;
+    if (/^\d*$/.test(value)) { // Apenas números inteiros
+      setWarningDays(value);
+      validateInputs(value, urgencyDays);
     }
   };
 
-  const handlePasswordChange = (event: any) => {
-    setPassword(event.target.value);
+  const handleUrgencyDaysChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const value = event.target.value;
+    if (/^\d*$/.test(value)) { // Apenas números inteiros
+      setUrgencyDays(value);
+      validateInputs(warningDays, value);
+    }
   };
 
-  const handleConfirmPasswordChange = (event: any) => {
-    setConfirmPassword(event.target.value);
-  };
-
-  const handleAddClient = async () => {
-    setIsLoading(true);
+  const validateInputs = (warning: string, urgency: string) => {
     setError(null);
-    setSuccessMessage('');
+    const warningNum = parseInt(warning);
+    const urgencyNum = parseInt(urgency);
+
+    if (warning && urgency && warningNum < urgencyNum) {
+      setError('O número de dias para urgência deve ser menor ou igual ao número de dias para aviso.');
+    }
+    if (warning && warningNum <= 0) {
+      setError('O número de dias para aviso deve ser maior que zero.');
+    }
+    if (urgency && urgencyNum <= 0) {
+      setError('O número de dias para urgência deve ser maior que zero.');
+    }
+  };
+
+  const handleSaveSettings = async () => {
+    if (!warningDays || !urgencyDays) {
+      setError('Por favor, preencha ambos os campos.');
+      return;
+    }
+    if (error) return;
+
+    setSaveLoading(true);
+    setError(null);
+    setSaveSuccess(null);
 
     try {
-      const apiUrl = `${BASE_URL}atmate-gateway/clients/create`;
-      const clientData = { nif, password };
-
-      if (password.length == 0) {
-        setError('A palavra-passe não pode ser vazia!');
-        setIsLoading(false);
-        return;
-      }
-
-
-      if (password !== confirmPassword) {
-        setError('As palavras-passe não coincidem!');
-        setIsLoading(false);
-        return;
-      }
-
-      if (nif.length != 9) {
-        setError('NIF tem que ter pelo menos 9 digitos!');
-        setIsLoading(false);
-        return;
-      }
-
-      // Faz a chamada à API com axios diretamente
-      const response = await axios.post(apiUrl, clientData, {
+      const response = await axios.post(`${BASE_URL}atmate-gateway/config/setParams`, {
+        warningDays,
+        urgencyDays,
+      }, {
         headers: {
           'Content-Type': 'application/json',
         },
       });
 
-      setIsLoading(false);
-      setSuccessMessage('Cliente adicionado com sucesso!');
-      setNif('');
-      setPassword('');
-      setConfirmPassword('');
-      console.log('Cliente adicionado:', response.data);
+      setSaveSuccess(response.data); // Expecting "Parameters updated successfully"
+      setError(null);
     } catch (err: any) {
-      setIsLoading(false);
-      setError('Ocorreu um erro ao comunicar com o servidor: ' + err.message);
+      const errorMessage = err.response?.data || 'Erro ao salvar configurações';
+      setError(errorMessage);
+      setSaveSuccess(null);
+    } finally {
+      setSaveLoading(false);
     }
   };
 
@@ -127,53 +147,50 @@ function Settings() {
             </div>
 
             <div className="col-md-5">
-              {/* Coluna 2: Definições de Segurança e Conta */}
+              {/* Coluna 2: Parametrização de Avisos e Urgências */}
               <div className="mb-4">
-                <h5 className="mb-3"><i className="bi bi-shield-lock me-2"></i> Novo cliente</h5>
+                <h5 className="mb-3"><i className="bi bi-exclamation-triangle me-2"></i> Parametrização de Prazos</h5>
                 <div className="mb-3">
-                  <label htmlFor="nif" className="form-label">NIF</label>
+                  <label htmlFor="warningDays" className="form-label">Dias para Aviso</label>
                   <input
-                    type="text"
+                    type="number"
                     className="form-control shadow-sm"
-                    id="nif"
-                    value={nif}
-                    onChange={handleNifChange}
-                  />
-                </div>
-                <div className="mb-3">
-                  <label htmlFor="password" className="form-label">Palavra-passe</label>
-                  <input
-                    type="password"
-                    className="form-control shadow-sm"
-                    id="password"
-                    value={password}
-                    onChange={handlePasswordChange}
+                    id="warningDays"
+                    value={warningDays}
+                    onChange={handleWarningDaysChange}
+                    min="1"
+                    placeholder="Ex.: 7"
+                    disabled={paramsLoading || saveLoading}
                   />
                 </div>
                 <div className="mb-4">
-                  <label htmlFor="confirmPassword" className="form-label">Confirmar palavra-passe</label>
+                  <label htmlFor="urgencyDays" className="form-label">Dias para Urgência</label>
                   <input
-                    type="password"
+                    type="number"
                     className="form-control shadow-sm"
-                    id="confirmPassword"
-                    value={confirmPassword}
-                    onChange={handleConfirmPasswordChange}
+                    id="urgencyDays"
+                    value={urgencyDays}
+                    onChange={handleUrgencyDaysChange}
+                    min="1"
+                    placeholder="Ex.: 2"
+                    disabled={paramsLoading || saveLoading}
                   />
                 </div>
                 <div className="d-flex justify-content-center">
                   <button
-                    type="button" // Alterado para 'button' para evitar a submissão padrão do formulário
+                    type="button"
                     className="btn btn-primary shadow"
-                    onClick={handleAddClient} // Adiciona o handler de clique
-                    disabled={isLoading} // Desabilita o botão durante o carregamento
+                    onClick={handleSaveSettings}
+                    disabled={paramsLoading || saveLoading}
                   >
-                    {isLoading ? 'A adicionar...' : 'Adicionar cliente'}
+                    {saveLoading ? 'A salvar...' : 'Salvar Configurações'}
                   </button>
                 </div>
               </div>
 
               {error && <div className="alert alert-danger mt-3">{error}</div>}
-              {successMessage && <div className="alert alert-success mt-3">{successMessage}</div>}
+              {saveSuccess && <div className="alert alert-success mt-3">{saveSuccess}</div>}
+              {paramsError && <div className="alert alert-danger mt-3">Erro ao carregar configurações: {paramsError}</div>}
             </div>
           </div>
 

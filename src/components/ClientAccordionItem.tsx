@@ -1,9 +1,11 @@
-import React from "react";
-import TaxTable from "./TaxTable";
+import React from 'react';
+import TaxTable from './TaxTable';
 
 interface Tax {
   taxId: number;
+  taxData: string;
   type: number;
+  licensePlate: string;
   amount: string;
   paymentDeadline: string;
   daysLeft: number;
@@ -12,17 +14,34 @@ interface Tax {
 interface ClientTax {
   clientId: number;
   clientName: string;
+  nextPaymentDate: string;
   taxes: Tax[];
 }
 
 interface Props {
   client: ClientTax;
   index: number;
+  warningDays: number;
+  urgentDays: number;
 }
 
-const ClientAccordionItem: React.FC<Props> = ({ client, index }) => {
+const ClientAccordionItem: React.FC<Props> = ({ client, index, warningDays, urgentDays }) => {
   const { clientId, clientName, taxes } = client;
-  const isUrgent = taxes[0]?.daysLeft <= 100;
+
+  // Determinar o estado com base nos dias restantes
+  const daysLeft = taxes[0]?.daysLeft;
+  let status: 'urgent' | 'warning' | 'normal' = 'normal';
+  let icon = '🟢'; // Ícone para estado normal
+
+  if (daysLeft !== undefined) {
+    if (daysLeft <= urgentDays) {
+      status = 'urgent';
+      icon = '🚨'; // Ícone para urgente
+    } else if (daysLeft <= warningDays) {
+      status = 'warning';
+      icon = '⚠️'; // Ícone para aviso
+    }
+  }
 
   return (
     <div className="accordion-item" key={clientId}>
@@ -37,16 +56,18 @@ const ClientAccordionItem: React.FC<Props> = ({ client, index }) => {
         >
           <div className="d-flex align-items-center w-100 justify-content-between">
             <div className="d-flex align-items-center">
-              <span className="fs-4">{isUrgent ? "🚨" : "⚠️"}</span>
+              <span className="fs-4">{icon}</span>
               <span className="ms-4 fs-3">{clientName}</span>
             </div>
-            <span className="text-muted me-5">{taxes[0]?.daysLeft} dias até expirar</span>
+            <span className="text-muted me-5">
+              {daysLeft !== undefined ? `${daysLeft} dias até expirar` : 'Sem prazo'}
+            </span>
           </div>
         </button>
       </h2>
       <div
         id={`collapse${index}`}
-        className={`accordion-collapse collapse ${index === 0 ? "show" : ""}`}
+        className={`accordion-collapse collapse ${index === 0 ? 'show' : ''}`}
         aria-labelledby={`heading${index}`}
         data-bs-parent="#mainAccordion"
       >
