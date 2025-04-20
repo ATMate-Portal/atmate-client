@@ -12,6 +12,7 @@ interface ObrigacaoFiscal {
     clientName: string;
     valor: string;
     estado: string;
+    json: string;
 }
 
 const Taxes = () => {
@@ -28,7 +29,8 @@ const Taxes = () => {
     const [toDate, setToDate] = useState<string>('');
     const [estadoFilter, setEstadoFilter] = useState<string>('Todos');
     const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
-    const [estadosDisponiveis, setEstadosDisponiveis] = useState<string[]>(['Todos']); // Novo estado para estados
+    const [estadosDisponiveis, setEstadosDisponiveis] = useState<string[]>(['Todos']);
+    const [selectedObrigacao, setSelectedObrigacao] = useState<ObrigacaoFiscal | null>(null);
 
     useEffect(() => {
         if (obrigações) {
@@ -69,6 +71,14 @@ const Taxes = () => {
             setSortBy(column);
             setSortDirection('asc');
         }
+    };
+
+    const handleShowDetails = (obrigacao: ObrigacaoFiscal) => {
+        setSelectedObrigacao(obrigacao);
+    };
+
+    const handleCloseModal = () => {
+        setSelectedObrigacao(null);
     };
 
     const filteredObrigações = (obrigações || []).filter((obrigacao) => {
@@ -144,8 +154,6 @@ const Taxes = () => {
 
     return (
         <div className="container-fluid mt-5 animate-fade-in">
-
-
             <div className="d-flex justify-content-between align-items-center" onClick={handleRefresh}>
                 {lastUpdated && (
                     <p className="text-muted mr-3">
@@ -155,7 +163,7 @@ const Taxes = () => {
                             style={{ cursor: 'pointer' }}
                             spin={isRefreshing}
                         />
-                        &nbsp;
+                         
                         Última atualização: {lastUpdated}
                     </p>
                 )}
@@ -163,7 +171,6 @@ const Taxes = () => {
             </div>
 
             <div className="d-flex justify-content-between align-items-center mb-3">
-                {/* Filtros à esquerda */}
                 <div className="d-flex gap-2 align-items-center">
                     <div className="d-flex gap-2 align-items-center">
                         <label htmlFor="fromDate" className="form-label m-0 text-secondary small">De:</label>
@@ -207,8 +214,6 @@ const Taxes = () => {
                         ))}
                     </select>
                 </div>
-
-                {/* Barra de pesquisa à direita */}
                 <div className="d-flex justify-content-end">
                     <div className="position-relative d-flex align-items-center search-bar-container">
                         <div className="position-absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none search-icon">
@@ -281,7 +286,12 @@ const Taxes = () => {
                                             </span>
                                         </td>
                                         <td style={cellStyle} className="text-center">
-                                            <button className="btn btn-sm btn-outline-secondary rounded-pill shadow-sm">
+                                            <button
+                                                className="btn btn-sm btn-outline-secondary rounded-pill shadow-sm"
+                                                onClick={() => handleShowDetails(obrigacao)}
+                                                data-bs-toggle="modal"
+                                                data-bs-target="#detailsModal"
+                                            >
                                                 <FontAwesomeIcon icon={faInfoCircle} className="me-1" /> Ver Detalhes
                                             </button>
                                         </td>
@@ -290,6 +300,49 @@ const Taxes = () => {
                             )}
                         </tbody>
                     </table>
+                </div>
+            </div>
+
+            {/* Modal for displaying details */}
+            <div className="modal fade" id="detailsModal" tabIndex={-1} aria-labelledby="detailsModalLabel" aria-hidden="true">
+                <div className="modal-dialog modal-lg">
+                    <div className="modal-content">
+                        <div className="modal-header">
+                            <h5 className="modal-title" id="detailsModalLabel">
+                                Detalhes da Obrigação Fiscal {selectedObrigacao?.identificadorUnico}
+                            </h5>
+                            <button type="button" className="btn-close" data-bs-dismiss="modal" aria-label="Close" onClick={handleCloseModal}></button>
+                        </div>
+                        <div className="modal-body">
+                            {selectedObrigacao && (
+                                <>
+                                    <h6>Informações Gerais</h6>
+                                    <p><strong>Tipo:</strong> {selectedObrigacao.tipo}</p>
+                                    <p><strong>Cliente:</strong> {selectedObrigacao.clientName}</p>
+                                    <p><strong>Data Limite:</strong> {selectedObrigacao.dataLimite}</p>
+                                    <p><strong>Valor:</strong> {selectedObrigacao.valor}</p>
+                                    <p><strong>Estado:</strong> {selectedObrigacao.estado}</p>
+                                    <hr />
+                                    <h6>Detalhes Adicionais</h6>
+                                    {(() => {
+                                        try {
+                                            const jsonData = JSON.parse(selectedObrigacao.json);
+                                            return Object.entries(jsonData).map(([key, value]) => (
+                                                <p key={key}><strong>{key}:</strong> {String(value)}</p>
+                                            ));
+                                        } catch (e) {
+                                            return <p className="text-danger">Erro ao processar os detalhes adicionais.</p>;
+                                        }
+                                    })()}
+                                </>
+                            )}
+                        </div>
+                        <div className="modal-footer">
+                            <button type="button" className="btn btn-secondary" data-bs-dismiss="modal" onClick={handleCloseModal}>
+                                Fechar
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
