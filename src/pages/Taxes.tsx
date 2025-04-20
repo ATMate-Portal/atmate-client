@@ -1,7 +1,7 @@
 import React, { useState, useEffect, ChangeEvent, useCallback } from 'react';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faSearch, faSortUp, faSortDown, faInfoCircle, faSyncAlt } from '@fortawesome/free-solid-svg-icons';
+import { faSearch, faSortUp, faSortDown, faInfoCircle, faSyncAlt, faTag, faUser, faCalendar, faEuroSign, faCheckCircle, faFileAlt } from '@fortawesome/free-solid-svg-icons';
 import './Taxes.css';
 import useApi from '../hooks/useApi';
 
@@ -214,6 +214,7 @@ const Taxes = () => {
                         ))}
                     </select>
                 </div>
+
                 <div className="d-flex justify-content-end">
                     <div className="position-relative d-flex align-items-center search-bar-container">
                         <div className="position-absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none search-icon">
@@ -287,10 +288,10 @@ const Taxes = () => {
                                         </td>
                                         <td style={cellStyle} className="text-center">
                                             <button
-                                                className="btn btn-sm btn-outline-secondary rounded-pill shadow-sm"
+                                                className="btn btn-sm btn-outline-primary rounded-pill shadow-sm"
                                                 onClick={() => handleShowDetails(obrigacao)}
                                                 data-bs-toggle="modal"
-                                                data-bs-target="#detailsModal"
+                                                data-bs-target="#taxes-details-modal"
                                             >
                                                 <FontAwesomeIcon icon={faInfoCircle} className="me-1" /> Ver Detalhes
                                             </button>
@@ -304,41 +305,102 @@ const Taxes = () => {
             </div>
 
             {/* Modal for displaying details */}
-            <div className="modal fade" id="detailsModal" tabIndex={-1} aria-labelledby="detailsModalLabel" aria-hidden="true">
-                <div className="modal-dialog modal-lg">
-                    <div className="modal-content">
-                        <div className="modal-header">
-                            <h5 className="modal-title" id="detailsModalLabel">
-                                Detalhes da Obrigação Fiscal {selectedObrigacao?.identificadorUnico}
+            <div className="modal fade" id="taxes-details-modal" tabIndex={-1} aria-labelledby="taxes-details-modal-label" aria-hidden="true">
+                <div className="modal-dialog modal-lg modal-dialog-centered">
+                    <div className="modal-content" id="taxes-modal-content">
+                        <div className="modal-header" id="taxes-modal-header">
+                            <h5 className="modal-title" id="taxes-details-modal-label">
+                                <FontAwesomeIcon icon={faInfoCircle} className="me-2" />
+                                {selectedObrigacao?.tipo} - {selectedObrigacao?.identificadorUnico}
                             </h5>
-                            <button type="button" className="btn-close" data-bs-dismiss="modal" aria-label="Close" onClick={handleCloseModal}></button>
+                            <button type="button" className="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close" onClick={handleCloseModal}></button>
                         </div>
-                        <div className="modal-body">
-                            {selectedObrigacao && (
-                                <>
-                                    <h6>Informações Gerais</h6>
-                                    <p><strong>Tipo:</strong> {selectedObrigacao.tipo}</p>
-                                    <p><strong>Cliente:</strong> {selectedObrigacao.clientName}</p>
-                                    <p><strong>Data Limite:</strong> {selectedObrigacao.dataLimite}</p>
-                                    <p><strong>Valor:</strong> {selectedObrigacao.valor}</p>
-                                    <p><strong>Estado:</strong> {selectedObrigacao.estado}</p>
-                                    <hr />
-                                    <h6>Detalhes Adicionais</h6>
-                                    {(() => {
-                                        try {
-                                            const jsonData = JSON.parse(selectedObrigacao.json);
-                                            return Object.entries(jsonData).map(([key, value]) => (
-                                                <p key={key}><strong>{key}:</strong> {String(value)}</p>
-                                            ));
-                                        } catch (e) {
-                                            return <p className="text-danger">Erro ao processar os detalhes adicionais.</p>;
-                                        }
-                                    })()}
-                                </>
+                        <div className="modal-body" id="taxes-modal-body">
+                            {selectedObrigacao ? (
+                                <div id="taxes-details-container">
+                                    <div id="taxes-details-card">
+                                        <h6 className="card-title" id="taxes-card-title">
+                                            <FontAwesomeIcon icon={faTag} className="me-2" />
+                                            Detalhes da Obrigação Fiscal
+                                        </h6>
+                                        <div id="taxes-details-list">
+                                            <div className="detail-row" id="taxes-detail-row-tipo">
+                                                <FontAwesomeIcon icon={faTag} className="detail-icon" />
+                                                <span className="detail-label">Tipo:</span>
+                                                <span className="detail-value">{selectedObrigacao.tipo}</span>
+                                            </div>
+                                            <div className="detail-row" id="taxes-detail-row-referencia">
+                                                <FontAwesomeIcon icon={faFileAlt} className="detail-icon" />
+                                                <span className="detail-label">
+                                                    {selectedObrigacao.tipo === 'IMI' ? 'Nota Cobrança:' : selectedObrigacao.tipo === 'IUC' ? 'Matrícula:' : 'Referência:'}
+                                                </span>
+                                                <span className="detail-value">{selectedObrigacao.identificadorUnico}</span>
+                                            </div>
+                                            <div className="detail-row" id="taxes-detail-row-cliente">
+                                                <FontAwesomeIcon icon={faUser} className="detail-icon" />
+                                                <span className="detail-label">Cliente:</span>
+                                                <span className="detail-value">{selectedObrigacao.clientName}</span>
+                                            </div>
+                                            <div className="detail-row" id="taxes-detail-row-data">
+                                                <FontAwesomeIcon icon={faCalendar} className="detail-icon" />
+                                                <span className="detail-label">Data Limite:</span>
+                                                <span className="detail-value">{selectedObrigacao.dataLimite}</span>
+                                            </div>
+                                            <div className="detail-row" id="taxes-detail-row-valor">
+                                                <FontAwesomeIcon icon={faEuroSign} className="detail-icon" />
+                                                <span className="detail-label">Valor:</span>
+                                                <span className="detail-value">{selectedObrigacao.valor}</span>
+                                            </div>
+                                            <div className="detail-row" id="taxes-detail-row-estado">
+                                                <FontAwesomeIcon icon={faCheckCircle} className="detail-icon" />
+                                                <span className="detail-label">Estado:</span>
+                                                <span className={`badge modern-badge ${
+                                                    selectedObrigacao.estado === 'Pendente' ? 'badge-pending' :
+                                                    selectedObrigacao.estado === 'Pago' ? 'badge-paid' :
+                                                    'badge-canceled'
+                                                }`}>
+                                                    {selectedObrigacao.estado}
+                                                </span>
+                                            </div>
+                                            {(() => {
+                                                try {
+                                                    const jsonData = JSON.parse(selectedObrigacao.json);
+                                                    return Object.entries(jsonData).map(([key, value]) => (
+                                                        (key !== 'Situação' && key !== 'Nº Nota Cob.' && key !== 'Valor' && key !== 'Data Lim. Pag.' && key !== 'Matrícula' && key !== 'Situação da Nota' && key !== 'Data Limite de Pagamento') && (
+                                                            <div className="detail-row" key={key} id={`taxes-detail-row-${key.toLowerCase().replace(/\s/g, '-')}`}>
+                                                                <FontAwesomeIcon icon={faFileAlt} className="detail-icon" />
+                                                                <span className="detail-label">{key}:</span>
+                                                                <span className="detail-value">{String(value)}</span>
+                                                            </div>
+                                                        )
+                                                    ));
+                                                } catch (e) {
+                                                    return (
+                                                        <div className="detail-row text-danger" id="taxes-detail-row-error">
+                                                            <FontAwesomeIcon icon={faFileAlt} className="detail-icon" />
+                                                            <span className="detail-label">Erro:</span>
+                                                            <span className="detail-value">Não foi possível carregar os detalhes adicionais.</span>
+                                                        </div>
+                                                    );
+                                                }
+                                            })()}
+                                        </div>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="text-center text-muted">
+                                    Nenhuma obrigação selecionada.
+                                </div>
                             )}
                         </div>
-                        <div className="modal-footer">
-                            <button type="button" className="btn btn-secondary" data-bs-dismiss="modal" onClick={handleCloseModal}>
+                        <div className="modal-footer" id="taxes-modal-footer">
+                            <button
+                                type="button"
+                                className="btn btn-primary modern-btn rounded-pill"
+                                data-bs-dismiss="modal"
+                                onClick={handleCloseModal}
+                                id="taxes-close-button"
+                            >
                                 Fechar
                             </button>
                         </div>
