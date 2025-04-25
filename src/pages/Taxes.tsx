@@ -1,7 +1,7 @@
 import React, { useState, useEffect, ChangeEvent, useCallback } from 'react';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faSearch, faSortUp, faSortDown, faInfoCircle, faSyncAlt, faTag, faUser, faCalendar, faEuroSign, faCheckCircle, faFileAlt } from '@fortawesome/free-solid-svg-icons';
+import { faSearch, faSortUp, faSortDown, faInfoCircle, faSyncAlt, faTag, faUser, faCalendar, faEuroSign, faCheckCircle, faFileAlt, faChevronDown, faChevronUp } from '@fortawesome/free-solid-svg-icons';
 import './Taxes.css';
 import useApi from '../hooks/useApi';
 
@@ -31,6 +31,70 @@ const Taxes = () => {
     const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
     const [estadosDisponiveis, setEstadosDisponiveis] = useState<string[]>(['Todos']);
     const [selectedObrigacao, setSelectedObrigacao] = useState<ObrigacaoFiscal | null>(null);
+    const [showVehicleDetails, setShowVehicleDetails] = useState(false);
+
+    // Utility function to format field names
+    const formatFieldName = (key: string): string => {
+        // Handle special cases first
+        if (key === 'categoriaIUC') return 'Categoria IUC';
+        if (key === 'dataMatricula') return 'Data de Matrícula';
+        if (key === 'data1Matricula') return 'Data da Primeira Matrícula';
+
+        // Remove prefixes like "desc" and split camelCase or underscore-separated words
+        let formatted = key
+            .replace(/^desc/i, '') // Remove "desc" prefix (case-insensitive)
+            .replace(/([A-Z])/g, ' $1') // Split camelCase
+            .replace(/_/g, ' ') // Replace underscores with spaces
+            .trim();
+
+        // Split into words and capitalize each word
+        formatted = formatted
+            .split(/\s+/)
+            .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+            .join(' ');
+
+        // Specific replacements for better readability
+        formatted = formatted
+            .replace('Ambito Utilizacao', 'Âmbito de Utilização')
+            .replace('Tipo Susp Frente', 'Tipo Suspensão Frente')
+            .replace('Tipo Susp Retaguarda', 'Tipo Suspensão Retaguarda')
+            .replace('Veiculo', 'Veículo')
+            .replace('Passageiros', 'de Passageiros')
+            .replace('Pesado', 'Pesado')
+            .replace('Matree', 'Matrícula EEE')
+            .replace('Paisee', 'País EEE')
+            .replace('Cod Pais Eee', 'Código País EEE')
+            .replace('Data Pais Eee', 'Data País EEE')
+            .replace('Quant Eixos', 'Quantidade de Eixos')
+            .replace('Quant Eixos Frente', 'Quantidade de Eixos Frente')
+            .replace('Quant Eixos Retaguarda', 'Quantidade de Eixos Retaguarda')
+            .replace('Peso Conjunto', 'Peso do Conjunto')
+            .replace('Peso Maximo Conjunto', 'Peso Máximo do Conjunto')
+            .replace('Transporte Go', 'Transporte GO')
+            .replace('Ind Transformacao', 'Indicação de Transformação');
+
+        return formatted;
+    };
+
+    // Utility function to format values (trim spaces and convert true/false to Sim/Não)
+    const formatValue = (value: any): string => {
+        const trimmedValue = String(value).trim();
+        if (trimmedValue.toLowerCase() === 'true') return 'Sim';
+        if (trimmedValue.toLowerCase() === 'false') return 'Não';
+        return trimmedValue;
+    };
+
+    // Fields to exclude from display
+    const fieldsToExclude = [
+        'Nif',
+        'Nif Loc',
+        'Matricula',
+        'Data Pais E E E',
+        'Transporte G O',
+        'Data da primeira matricula',
+        'Matricula Value',
+        'data1Matricula' // Also exclude the raw key form
+    ];
 
     useEffect(() => {
         if (obrigações) {
@@ -75,10 +139,21 @@ const Taxes = () => {
 
     const handleShowDetails = (obrigacao: ObrigacaoFiscal) => {
         setSelectedObrigacao(obrigacao);
+        setShowVehicleDetails(false);
     };
 
     const handleCloseModal = () => {
         setSelectedObrigacao(null);
+        setShowVehicleDetails(false);
+    };
+
+    const toggleVehicleDetails = () => {
+        console.log('Toggling vehicle details, current state:', showVehicleDetails);
+        setShowVehicleDetails(prev => {
+            const newState = !prev;
+            console.log('New state:', newState);
+            return newState;
+        });
     };
 
     const filteredObrigações = (obrigações || []).filter((obrigacao) => {
@@ -329,13 +404,80 @@ const Taxes = () => {
                                                 <span className="detail-label">Tipo:</span>
                                                 <span className="detail-value">{selectedObrigacao.tipo}</span>
                                             </div>
-                                            <div className="detail-row" id="taxes-detail-row-referencia">
-                                                <FontAwesomeIcon icon={faFileAlt} className="detail-icon" />
+                                            <div 
+                                                className="detail-row d-flex align-items-center" 
+                                                id="taxes-detail-row-referencia"
+                                                style={{ cursor: selectedObrigacao.tipo === 'IUC' ? 'pointer' : 'default' }}
+                                                onClick={selectedObrigacao.tipo === 'IUC' ? toggleVehicleDetails : undefined}
+                                            >
+                                                <FontAwesomeIcon icon={faFileAlt} className="detail-icon me-2" />
                                                 <span className="detail-label">
                                                     {selectedObrigacao.tipo === 'IMI' ? 'Nota Cobrança:' : selectedObrigacao.tipo === 'IUC' ? 'Matrícula:' : 'Referência:'}
                                                 </span>
-                                                <span className="detail-value">{selectedObrigacao.identificadorUnico}</span>
+                                                <span className="detail-value flex-grow-1">{selectedObrigacao.identificadorUnico}</span>
+                                                {selectedObrigacao.tipo === 'IUC' && (
+                                                    <FontAwesomeIcon 
+                                                        icon={showVehicleDetails ? faChevronUp : faChevronDown} 
+                                                        className="ms-2 text-muted"
+                                                    />
+                                                )}
                                             </div>
+                                            {selectedObrigacao.tipo === 'IUC' && showVehicleDetails && (
+                                                <div className="detail-row ms-4 mt-2" id="taxes-detail-row-vehicle-details">
+                                                    <div className="card p-3 bg-light">
+                                                        <h6 className="mb-3">Detalhes do Veículo</h6>
+                                                        {(() => {
+                                                            try {
+                                                                const jsonData = JSON.parse(selectedObrigacao.json);
+                                                                console.log('Vehicle Details:', jsonData.detalhes_veiculo);
+                                                                const vehicleDetails = jsonData.detalhes_veiculo || {};
+                                                                const validEntries = Object.entries(vehicleDetails).filter(
+                                                                    ([key, value]) => 
+                                                                        !fieldsToExclude.includes(key) &&
+                                                                        !fieldsToExclude.includes(formatFieldName(key)) &&
+                                                                        value != null && 
+                                                                        String(value).trim() !== '' && 
+                                                                        String(value) !== 'null' && 
+                                                                        String(value) !== '-'
+                                                                );
+                                                                if (validEntries.length === 0) {
+                                                                    return (
+                                                                        <div className="detail-row text-muted" id="taxes-detail-row-vehicle-empty">
+                                                                            <FontAwesomeIcon icon={faFileAlt} className="detail-icon me-2" />
+                                                                            <span className="detail-value">Nenhum detalhe de veículo disponível.</span>
+                                                                        </div>
+                                                                    );
+                                                                }
+                                                                return validEntries.map(([key, value]) => {
+                                                                    const safeKey = key.toLowerCase().replace(/[^a-z0-9]/g, '-');
+                                                                    const formattedKey = formatFieldName(key);
+                                                                    const formattedValue = formatValue(value);
+                                                                    return (
+                                                                        <div 
+                                                                            className="detail-row mb-2" 
+                                                                            key={`vehicle-${safeKey}`} 
+                                                                            id={`taxes-detail-row-vehicle-${safeKey}`}
+                                                                        >
+                                                                            <FontAwesomeIcon icon={faFileAlt} className="detail-icon me-2" />
+                                                                            <span className="detail-label">{formattedKey}:</span>
+                                                                            <span className="detail-value">{formattedValue}</span>
+                                                                        </div>
+                                                                    );
+                                                                });
+                                                            } catch (e) {
+                                                                console.error('JSON Parse Error:', e);
+                                                                return (
+                                                                    <div className="detail-row text-danger" id="taxes-detail-row-vehicle-error">
+                                                                        <FontAwesomeIcon icon={faFileAlt} className="detail-icon me-2" />
+                                                                        <span className="detail-label">Erro:</span>
+                                                                        <span className="detail-value">Não foi possível carregar os detalhes do veículo.</span>
+                                                                    </div>
+                                                                );
+                                                            }
+                                                        })()}
+                                                    </div>
+                                                </div>
+                                            )}
                                             <div className="detail-row" id="taxes-detail-row-cliente">
                                                 <FontAwesomeIcon icon={faUser} className="detail-icon" />
                                                 <span className="detail-label">Cliente:</span>
@@ -365,15 +507,38 @@ const Taxes = () => {
                                             {(() => {
                                                 try {
                                                     const jsonData = JSON.parse(selectedObrigacao.json);
-                                                    return Object.entries(jsonData).map(([key, value]) => (
-                                                        (key !== 'Situação' && key !== 'Nº Nota Cob.' && key !== 'Valor' && key !== 'Data Lim. Pag.' && key !== 'Matrícula' && key !== 'Situação da Nota' && key !== 'Data Limite de Pagamento') && (
-                                                            <div className="detail-row" key={key} id={`taxes-detail-row-${key.toLowerCase().replace(/\s/g, '-')}`}>
+                                                    const validEntries = Object.entries(jsonData).filter(
+                                                        ([key, value]) =>
+                                                            key !== 'Situação' &&
+                                                            key !== 'Nº Nota Cob.' &&
+                                                            key !== 'Valor' &&
+                                                            key !== 'Data Lim. Pag.' &&
+                                                            key !== 'Matrícula' &&
+                                                            key !== 'Situação da Nota' &&
+                                                            key !== 'Data Limite de Pagamento' &&
+                                                            key !== 'detalhes_veiculo' &&
+                                                            !fieldsToExclude.includes(key) &&
+                                                            !fieldsToExclude.includes(formatFieldName(key)) &&
+                                                            value != null &&
+                                                            String(value).trim() !== '' &&
+                                                            String(value) !== 'null' &&
+                                                            String(value) !== '-'
+                                                    );
+                                                    if (validEntries.length === 0) {
+                                                        return null;
+                                                    }
+                                                    return validEntries.map(([key, value]) => {
+                                                        const safeKey = key.toLowerCase().replace(/[^a-z0-9]/g, '-');
+                                                        const formattedKey = formatFieldName(key);
+                                                        const formattedValue = formatValue(value);
+                                                        return (
+                                                            <div className="detail-row" key={safeKey} id={`taxes-detail-row-${safeKey}`}>
                                                                 <FontAwesomeIcon icon={faFileAlt} className="detail-icon" />
-                                                                <span className="detail-label">{key}:</span>
-                                                                <span className="detail-value">{String(value)}</span>
+                                                                <span className="detail-label">{formattedKey}:</span>
+                                                                <span className="detail-value">{formattedValue}</span>
                                                             </div>
-                                                        )
-                                                    ));
+                                                        );
+                                                    });
                                                 } catch (e) {
                                                     return (
                                                         <div className="detail-row text-danger" id="taxes-detail-row-error">

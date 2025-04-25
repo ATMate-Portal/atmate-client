@@ -594,3 +594,73 @@ body {
     opacity: 1;
   }
 }
+
+/* Existing styles in Taxes.css (assumed to be present) */
+.detail-icon {
+    color: #6c757d; /* Bootstrap secondary color */
+}
+
+.detail-label {
+    font-weight: 500;
+}
+
+.detail-value {
+    color: #495057; /* Bootstrap dark color */
+}
+
+.badge-pending {
+    background-color: #ffc107 !important; /* Bootstrap warning */
+    color: #212529 !important; /* Bootstrap dark */
+}
+
+.badge-paid {
+    background-color: #28a745 !important; /* Bootstrap success */
+}
+
+.badge-canceled {
+    background-color: #dc3545 !important; /* Bootstrap danger */
+}
+
+/* New styles for alignment */
+.detail-row {
+    display: grid;
+    grid-template-columns: auto 1fr; /* First column auto-sizes to label, second takes remaining space */
+    align-items: center;
+    gap: 0.5rem; /* Space between label and value */
+    margin-bottom: 0.5rem; /* Space between rows */
+}
+
+.detail-label-container {
+    display: flex;
+    align-items: center;
+    white-space: nowrap; /* Prevent label from wrapping */
+}
+
+.detail-value-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between; /* Aligns value and chevron */
+}
+
+.detail-value {
+    word-break: break-word; /* Allow long values to wrap */
+}
+
+/* Special case for the clickable row to ensure the chevron aligns properly */
+.detail-row-clickable {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* Ensure nested vehicle details card doesn't interfere with alignment */
+#taxes-detail-row-vehicle-details .card {
+    width: 100%;
+}
+
+/* Adjust badge styling to fit within the grid */
+.detail-value .badge {
+    display: inline-block;
+    vertical-align: middle;
+}
