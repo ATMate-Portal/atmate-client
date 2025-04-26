@@ -214,12 +214,10 @@ const Clients = () => {
             <p className="text-muted mb-0">
               <FontAwesomeIcon
                 icon={faSyncAlt}
-                className="mr-2"
+                className="mr-2 me-2"
                 style={{ cursor: 'pointer' }}
-
                 spin={isRefreshing}
               />
-              &nbsp;
               Última atualização: {lastUpdated}
             </p>
           ) : (

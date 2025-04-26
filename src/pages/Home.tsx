@@ -35,28 +35,31 @@ const Home: React.FC = () => {
   const [clientApiUrl, setClientApiUrl] = useState<string | null>(null);
 
   // Buscar parâmetros da API
-  const { data: params, loading: paramsLoading, error: paramsError } = useApi<ParamsDTO>('atmate-gateway/config/getParams');
+  const { data: params, loading: paramsLoading, error: paramsError } = useApi<ParamsDTO>(
+    'atmate-gateway/config/getParams'
+  );
 
-  // Definir warningDays e urgentDays
-  const warningDays = params && params.warningDays ? parseInt(params.warningDays) || 7 : 7;
-  const urgentDays = params && params.urgencyDays ? parseInt(params.urgencyDays) || 2 : 2;
+  // Definir warningDays e urgentDays apenas quando params estiver disponível
+  const warningDays = params?.warningDays ? parseInt(params.warningDays) : null;
+  const urgentDays = params?.urgencyDays ? parseInt(params.urgencyDays) : null;
 
   // Atualizar clientApiUrl quando params estiver carregado
   useEffect(() => {
-    if (!paramsLoading) {
-      setClientApiUrl(`atmate-gateway/tax/getUrgentTaxes?days=${warningDays}&refresh=${refreshCounter}`);
+    if (paramsLoading || !params || warningDays === null) {
+      setClientApiUrl(null); // Evitar definir URL até params estar carregado
+      return;
     }
-  }, [paramsLoading, warningDays, refreshCounter]);
+    setClientApiUrl(`atmate-gateway/tax/getUrgentTaxes?days=${warningDays}&refresh=${refreshCounter}`);
+  }, [paramsLoading, params, warningDays, refreshCounter]);
 
   // Buscar clientes apenas se clientApiUrl estiver definido
   const {
     data: clients,
     loading: clientsLoading,
-    error: clientsError
+    error: clientsError,
   } = useApi<ClientTax[]>(clientApiUrl || '', {
-    enabled: !!clientApiUrl // só faz fetch quando for string válida
+    enabled: !!clientApiUrl, // Só faz fetch quando for string válida
   });
-  
 
   const handleRefresh = useCallback(() => {
     setRefreshing(true);
@@ -77,17 +80,17 @@ const Home: React.FC = () => {
 
   return (
     <div className="container animate-fade-in">
-      <div className="d-flex align-items-center" onClick={handleRefresh}>
+      <div className="d-flex align-items-center">
         <div>
           {lastUpdated && (
             <p className="text-muted">
               <FontAwesomeIcon
                 icon={faSyncAlt}
-                className="mr-2"
+                className="mr-2 me-2"
                 style={{ cursor: 'pointer' }}
                 spin={refreshing}
+                onClick={handleRefresh} // Mover onClick para o ícone
               />
-               
               Última atualização: {lastUpdated}
             </p>
           )}
@@ -101,8 +104,8 @@ const Home: React.FC = () => {
               key={client.clientId}
               client={client}
               index={index}
-              warningDays={warningDays}
-              urgentDays={urgentDays}
+              warningDays={warningDays ?? 7} // Valor padrão apenas para renderização
+              urgentDays={urgentDays ?? 2}
             />
           ))}
         </div>

@@ -234,11 +234,10 @@ const Taxes = () => {
                     <p className="text-muted mr-3">
                         <FontAwesomeIcon
                             icon={faSyncAlt}
-                            className="mr-2"
+                            className="mr-2 me-2"
                             style={{ cursor: 'pointer' }}
                             spin={isRefreshing}
                         />
-                         
                         Última atualização: {lastUpdated}
                     </p>
                 )}
