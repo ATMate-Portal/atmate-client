@@ -65,6 +65,16 @@ const Sidebar: React.FC = () => {
 
       {/* Opções no fundo */}
       <Nav vertical className="bottom-options">
+      <NavItem>
+          <Link
+            to="/notifications"
+            className={`nav-link-custom ${
+              location.pathname === "/notifications" ? "active" : ""
+            }`}
+          >
+            <i className="fas fa-bell"></i> NOTIFICAÇÕES
+          </Link>
+        </NavItem>
         <NavItem>
           <Link
             to="/history"

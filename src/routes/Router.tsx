@@ -5,6 +5,7 @@ import Taxes from "../pages/Taxes";
 import Settings from "../pages/Settings";
 import Logout from "../pages/Logout";
 import OperationHistory from "../pages/OperationHistory";
+import Notifications from "../pages/Notifications";
 
 const Router = () => {
   return (
@@ -13,6 +14,7 @@ const Router = () => {
       <Route path="/clients" element={<Clients />} />
       <Route path="/taxes" element={<Taxes />} />
       <Route path="/history" element={<OperationHistory/>} />
+      <Route path="/notifications" element={<Notifications/>} />
       <Route path="/settings" element={<Settings />} />
       <Route path="/logout" element={<Logout />} />
     </Routes>

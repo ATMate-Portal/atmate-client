@@ -1,0 +1,181 @@
+/* --- Header --- */
+#notif-header {
+  display: flex;  width: 123.5%; /* Mantido da tua edição */ flex-wrap: wrap; justify-content: space-between; align-items: center;
+  margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px solid #d1d5db;
+}
+#notif-header h1 { font-size: 1.75rem; font-weight: 600; color: #1f2937; margin: 0 1rem 0 0; }
+#notif-last-updated { display: flex; align-items: center; gap: 0.6rem; color: #6b7280; font-size: 0.875rem; cursor: pointer; transition: color 0.2s ease; white-space: nowrap; }
+#notif-last-updated:hover { color: #3b82f6; }
+#notif-last-updated svg { font-size: 1.1rem; }
+
+/* --- Mensagens de Notificação --- */
+#notif-message-container {
+  padding: 1rem 1.5rem; margin-bottom: 2rem; border-radius: 8px; display: flex; align-items: center; justify-content: space-between; gap: 1rem; font-size: 0.95rem; border-width: 1px; border-style: solid;
+}
+#notif-msg-standalone-error { margin-top: 1rem; }
+#notif-message-container svg { font-size: 1.3rem; margin-right: 0.5rem; }
+#notif-message-container button { background: none; border: none; font-size: 1.6rem; line-height: 1; cursor: pointer; color: inherit; opacity: 0.6; padding: 0 0.3rem; margin-left: auto; }
+#notif-message-container button:hover { opacity: 1; }
+#notif-message-container.success { background-color: #d1fae5; color: #047857; border-color: #6ee7b7; }
+#notif-message-container.error { background-color: #fee2e2; color: #991b1b; border-color: #fca5a5; }
+
+/* --- Layout Lado a Lado --- */
+#notifications-layout {
+  display: flex; flex-wrap: wrap; gap: 3rem; align-items: stretch; width: 130%; max-width: 1500px; margin-left: auto; margin-right: auto; box-sizing: border-box;
+}
+.layout-column { }
+#notif-form-column { flex: 35 1 0; min-width: 380px; display: flex; }
+#notif-table-column { flex: 65 1 0; min-width: 520px; display: flex; }
+
+/* --- Card Base --- */
+.notification-card {
+  background: #ffffff; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.07); padding: 2.5rem; width: 100%; box-sizing: border-box; display: flex; flex-direction: column;
+}
+#notif-list-card h2 { margin: 0; padding: 0; border: none; font-size: 1.5rem; display: flex; align-items: center; gap: 0.6rem; }
+
+/* --- Formulário --- */
+#notif-form-card form { display: flex; flex-direction: column; gap: 1.5rem; height: 100%; }
+#notif-form-card fieldset.fieldset-bordered { border: 1px solid #e5e7eb; padding: 1.5rem; padding-top: 2rem; border-radius: 6px; margin: 0; display: flex; flex-direction: column; gap: 1.5rem; position: relative; }
+#notif-form-card fieldset.fieldset-bordered:not(:first-of-type) { flex-grow: 1; }
+
+#notif-form-card fieldset.fieldset-bordered legend { font-size: 0.9rem; font-weight: 600; color: #4b5563; margin-bottom: 0; display: flex; align-items: center; gap: 0.5rem; padding: 0 0.5rem; border: none; position: absolute; top: 0; left: 1rem; transform: translateY(-50%); background: #ffffff; width: auto; }
+#notif-form-card fieldset.fieldset-bordered legend svg { color: #6b7280; }
+#notif-form-card .form-group { display: flex; flex-direction: column; gap: 0.4rem; }
+/* Aplica min-height ao grupo de cliente */
+#notif-client-group {
+    min-height: 220px; /* Ajusta este valor conforme necessário */
+    display: flex;
+    flex-direction: column;
+    gap: 1rem; /* Espaçamento interno do grupo cliente */
+}
+
+#notif-form-card .form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1.5rem; align-items: start; }
+
+#notif-form-card label { font-size: 0.875rem; font-weight: 500; color: #374151; display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.2rem; }
+#notif-form-card .required-indicator { color: #ef4444; font-weight: bold; margin-left: 0.2rem; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border-width: 0; }
+
+#notif-form-card input[type="text"],
+#notif-form-card input[type="number"],
+#notif-form-card select { width: 100%; padding: 0.75rem 1rem; font-size: 0.9rem; border: 1px solid #d1d5db; border-radius: 6px; background-color: #ffffff; transition: border-color 0.2s, box-shadow 0.2s; box-sizing: border-box; color: #1f2937; }
+#notif-form-card input:focus,
+#notif-form-card select:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2); outline: none; }
+#notif-form-card input::placeholder { color: #9ca3af; font-size: 0.9rem; }
+#notif-form-card select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3E%3C/svg%3E"); background-position: right 1rem center; background-repeat: no-repeat; background-size: 1em; padding-right: 2.5rem; }
+#notif-form-card select option { color: #1f2937; background-color: #ffffff; }
+#notif-form-card select option[disabled] { color: #9ca3af; }
+#notif-form-card select:required:invalid { color: #9ca3af; }
+
+/* Controlo de Modo Cliente */
+#notif-client-mode-selector { display: flex; width: 100%; border-radius: 6px; overflow: hidden; border: 1px solid #d1d5db; }
+#notif-client-mode-selector button { flex-grow: 1; padding: 0.7rem 1rem; border: none; background-color: #ffffff; color: #374151; font-size: 0.9rem; font-weight: 500; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.5rem; transition: background-color 0.2s, color 0.2s; text-align: center; border-left: 1px solid #d1d5db; }
+#notif-client-mode-selector button:first-child { border-left: none; }
+#notif-client-mode-selector button:hover:not(.active):not(:disabled) { background-color: #f4f4f5; }
+#notif-client-mode-selector button.active { background-color: #3b82f6; color: white; }
+#notif-client-mode-selector button:disabled { opacity: 0.6; cursor: not-allowed; background-color: #f3f4f6; color: #9ca3af; }
+#notif-client-mode-selector button svg { font-size: 1rem; }
+
+/* Autocomplete e Seleção Múltipla */
+#notif-client-group .autocomplete-wrapper { position: relative; display: flex; align-items: center; margin-bottom: 0.5rem; }
+#notif-client-group .search-icon { position: absolute; left: 12px; color: #9ca3af; font-size: 0.9rem; }
+#notif-client-group input[type="text"] { padding-left: 2.5rem; font-size: 0.9rem; }
+#notif-client-group .autocomplete-dropdown { position: absolute; top: calc(100% + 4px); left: 0; right: 0; background: #ffffff; border: 1px solid #d1d5db; border-radius: 6px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.07); list-style: none; margin: 0; padding: 0.5rem 0; z-index: 10; max-height: 200px; overflow-y: auto; }
+#notif-client-group .autocomplete-dropdown li { padding: 0.6rem 1.2rem; cursor: pointer; font-size: 0.9rem; }
+#notif-client-group .autocomplete-dropdown li:hover { background-color: #eff6ff; color: #2563eb; }
+#notif-client-group .no-results { font-size: 0.85rem; color: #6b7280; margin-top: 0.2rem; }
+#notif-client-group .info-edit, .info-all-selected { font-size: 0.9rem; color: #1f2937; /* margin-top: 0.5rem; */ padding: 0.6rem 1rem; background-color: #eff6ff; border-radius: 4px; border: 1px solid #bfdbfe; display: flex; align-items: center; gap: 0.5rem;} /* Removida margem top */
+#notif-client-group .info-edit strong { font-weight: 600; }
+#notif-client-group .info-all-selected svg { color: #10b981; }
+
+#notif-selected-clients-list { display: flex; flex-wrap: wrap; gap: 0.6rem; /* margin-top: 0.8rem; */ padding: 0.8rem; border: 1px solid #e5e7eb; border-radius: 6px; min-height: 50px; background-color: #f9fafb; } /* Removida margem top */
+#notif-selected-clients-list .selected-item-pill { display: inline-flex; align-items: center; background-color: #e0e7ff; color: #3730a3; padding: 0.4rem 0.8rem; border-radius: 16px; font-size: 0.85rem; font-weight: 500; }
+#notif-selected-clients-list .remove-item-button { background: none; border: none; color: #3730a3; font-size: 1.3rem; line-height: 1; margin-left: 0.5rem; cursor: pointer; padding: 0 0.2rem; opacity: 0.7; }
+#notif-selected-clients-list .remove-item-button:hover { opacity: 1; color: #1c1917; }
+#notif-selected-clients-list .no-selection { font-size: 0.85rem; color: #6b7280; align-self: center; padding: 0.5rem; }
+
+/* Botões do Formulário */
+#notif-form-actions { display: flex; gap: 1rem; justify-content: flex-end; margin-top: auto; padding-top: 2rem; border-top: 1px solid #e5e7eb; }
+#notif-form-card .button-primary, #notif-form-card .button-secondary { padding: 0.8rem 1.8rem; font-size: 0.95rem; font-weight: 600; border: none; border-radius: 6px; cursor: pointer; transition: background-color 0.2s, opacity 0.2s, box-shadow 0.2s; display: inline-flex; align-items: center; justify-content: center; gap: 0.6rem; line-height: 1.2; }
+#notif-form-card .button-primary { background-color: #3b82f6; color: white; }
+#notif-form-card .button-primary:hover:not(:disabled) { background-color: #2563eb; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+#notif-form-card .button-secondary { background-color: #6b7280; color: white; }
+#notif-form-card .button-secondary:hover:not(:disabled) { background-color: #4b5563; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+#notif-form-card .button-primary:disabled, #notif-form-card .button-secondary:disabled { opacity: 0.6; cursor: not-allowed; }
+
+/* --- Tabela --- */
+#notif-list-card { overflow: hidden; display: flex; flex-direction: column; height: 100%; }
+
+/* Controles da Tabela */
+#notif-table-controls { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; gap: 1rem; padding-bottom: 1rem; border-bottom: 1px solid #e5e7eb; }
+#notif-filter-group { display: flex; align-items: center; gap: 0.8rem; }
+#notif-filter-group label { font-size: 0.9rem; font-weight: 500; color: #374151; margin-bottom: 0; white-space: nowrap; display: flex; align-items: center; gap: 0.4rem; }
+#notif-filter-group select { padding: 0.5rem 0.8rem; font-size: 0.9rem; border-radius: 6px; border: 1px solid #d1d5db; background-color: #ffffff; min-width: 150px; color: #1f2937; }
+#notif-filter-group select option { color: #1f2937; background-color: #ffffff; }
+
+/* Tabela e Responsividade */
+#notif-table-responsive { overflow-y: auto; flex-grow: 1; margin-top: 0; }
+#notifications-table-element { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 0.9rem; }
+#notifications-table-element th, #notifications-table-element td { padding: 0.9rem 1.2rem; text-align: left; border-bottom: 1px solid #e5e7eb; vertical-align: middle; }
+#notifications-table-element thead th { position: sticky; top: -1px; background-color: #f9fafb; font-weight: 600; color: #374151; white-space: nowrap; border-top: 1px solid #e5e7eb; z-index: 1; }
+#notifications-table-element th:first-child { border-top-left-radius: 6px; }
+#notifications-table-element th:last-child { border-top-right-radius: 6px; }
+
+#notifications-table-element tbody tr:nth-child(odd) { background-color: #fdfdff; }
+#notifications-table-element tbody tr:hover { background-color: #eff6ff; }
+#notifications-table-element td.no-data { text-align: center; color: #6b7280; padding: 2.5rem; background-color: transparent !important; }
+#notifications-table-element td.cell-center { text-align: center; }
+
+/* Status Badge */
+#notifications-table-element .status { padding: 0.25rem 0.7rem; border-radius: 12px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; white-space: nowrap; border: 1px solid transparent; }
+#notifications-table-element .status.active { background-color: #d1fae5; color: #047857; border-color: #6ee7b7;}
+#notifications-table-element .status.inactive { background-color: #fee2e2; color: #991b1b; border-color: #fca5a5;}
+
+/* Botões de Ação na Tabela */
+#notifications-table-element .action-buttons { display: flex; gap: 0.6rem; justify-content: center; }
+#notifications-table-element .action-button { background: none; border: none; cursor: pointer; padding: 0.4rem; font-size: 1.1rem; color: #6b7280; transition: color 0.2s, background-color 0.2s; border-radius: 4px; line-height: 1; }
+#notifications-table-element .action-button:hover:not(:disabled) { color: #2563eb; background-color: #e0e7ff; }
+#notifications-table-element .action-button.edit:hover:not(:disabled) { color: #2563eb; }
+#notifications-table-element .action-button.toggle:hover:not(:disabled) { }
+#notifications-table-element .action-button.delete:hover:not(:disabled) { color: #dc2626; background-color: #fee2e2; }
+#notifications-table-element .action-button:disabled { color: #ccc; cursor: not-allowed; background-color: transparent !important; }
+
+/* --- Placeholders de Loading/Erro --- */
+.loading-placeholder, .error-placeholder { text-align: center; padding: 2rem; color: #6b7280; font-size: 0.95rem; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1rem; min-height: 150px; flex-grow: 1; }
+#notif-loading-initial { min-height: 80vh; display: flex; align-items: center; justify-content: center; gap: 1rem; color: #6b7280; font-size: 1.1rem; }
+#notif-error-placeholder { color: #ef4444; background-color: #fee2e2; border: 1px solid #dc2626; border-radius: 8px; width: 100%; box-sizing: border-box;}
+#notif-error-placeholder span { display: flex; align-items: center; gap: 0.5rem; }
+#notif-error-placeholder .retry-button { margin-top: 1rem; }
+#notif-error-placeholder .retry-button svg { margin-right: 0.5rem; }
+#notif-action-loading { min-height: 50px; }
+
+
+/* --- Responsividade --- */
+@media (max-width: 992px) {
+  #notifications-layout { display: block; max-width: none; margin-left: 0; margin-right: 0; width: 100%; }
+  #notif-form-column, #notif-table-column { flex: auto; min-width: auto; width: 100%; }
+  #notif-form-column { margin-bottom: 2.5rem; }
+  #notif-header { width: 100%; }
+}
+
+@media (max-width: 768px) {
+  #notif-header { flex-direction: column; align-items: flex-start; gap: 1rem; }
+  .notification-card { padding: 1.5rem; }
+  #notif-list-card h2 { font-size: 1.3rem; }
+  #notif-table-controls { flex-direction: column; align-items: flex-start; }
+  #notif-form-card .form-row { grid-template-columns: 1fr; gap: 1.5rem; }
+  #notif-form-actions { flex-direction: column; gap: 0.8rem; align-items: stretch; }
+  #notif-form-card .button-primary, #notif-form-card .button-secondary { width: 100%; justify-content: center;}
+
+  /* Tabela Mobile */
+  #notifications-table-element thead { display: none; }
+  #notifications-table-element tr { display: block; margin-bottom: 1.5rem; border: 1px solid #e5e7eb; border-radius: 8px; padding: 1rem; background-color: #ffffff !important; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.07); }
+  #notifications-table-element td { display: flex; justify-content: space-between; align-items: center; text-align: right; border-bottom: 1px dashed #e5e7eb; padding: 0.8rem 0; }
+  #notifications-table-element td:last-child { border-bottom: none; }
+  #notifications-table-element td::before { content: attr(data-label); font-weight: 600; text-align: left; white-space: nowrap; color: #374151; padding-right: 1rem; }
+  #notifications-table-element td.action-buttons { justify-content: center; padding-top: 1rem; }
+  #notifications-table-element td.action-buttons::before { display: none; }
+  #notifications-table-element .action-buttons { gap: 1rem; }
+}
+
+/* Classe utilitária para esconder visualmente mas manter acessível */
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border-width: 0; }
