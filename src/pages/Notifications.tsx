@@ -185,7 +185,7 @@ const Notifications: React.FC = () => {
     const notificationTypeOptions = useMemo<SelectOption[]>(() => allNotificationTypes.map(type => ({ value: type.id, label: type.name })), []);
 
     // --- Lógica de Submissão ---
-    const submitEndpoint = editingConfigId ? `/notification/update/${editingConfigId}` : ''; // Relativo a FULL_API_BASE_URL
+    const submitEndpoint = editingConfigId ? `atmate-gateway/notification/update/${editingConfigId}` : ''; // Relativo a FULL_API_BASE_URL
     const submitMethod = 'PUT';
 
     const getSubmitBody = useCallback((): CreateNotificationRequestPayload | any => {
@@ -254,7 +254,7 @@ const Notifications: React.FC = () => {
         setNotificationMessage(null);
         const payload = getSubmitBody();
         // !! NECESSÁRIO: Usar URL Base Completa !!
-        const apiUrl = `${FULL_API_BASE_URL}/notification/create`; // Usa constante global
+        const apiUrl = `${FULL_API_BASE_URL}atmate-gateway/notification/create`; // Usa constante global
         console.log("Attempting POST to:", apiUrl);
 
         try {
