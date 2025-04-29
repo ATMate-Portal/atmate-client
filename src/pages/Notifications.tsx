@@ -17,7 +17,7 @@ import useApi from '../hooks/useApi';
 
 // --- Constantes ---
 // !! IMPORTANTE: Defina a URL base COMPLETA da sua API !!
-const FULL_API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://atmate.sytes.net:8180/atmate-gateway/'; // Use a sua URL base correta
+const FULL_API_BASE_URL = import.meta.env.VITE_API_BASE_URL; // Use a sua URL base correta
 
 const frequencies: string[] = ['Diário', 'Semanal', 'Mensal', 'Trimestral'];
 const ITEMS_PER_PAGE = 10;
@@ -128,11 +128,11 @@ const Notifications: React.FC = () => {
 
     // --- API Hooks ---
     // Certifique-se que o useApi constrói a URL corretamente com FULL_API_BASE_URL
-    const { data: allClientsData, loading: clientsLoading, error: clientsError } = useApi<Client[]>(`clients/getClients?refresh=${refreshTrigger}`, { enabled: true });
+    const { data: allClientsData, loading: clientsLoading, error: clientsError } = useApi<Client[]>(`atmate-gateway/clients/getClients?refresh=${refreshTrigger}`, { enabled: true });
     const allClients = useMemo(() => allClientsData || [], [allClientsData]);
-    const { data: taxTypesData, loading: taxTypesLoading, error: taxTypesError } = useApi<TaxType[]>(`tax/getTypes?refresh=${refreshTrigger}`, { enabled: true });
+    const { data: taxTypesData, loading: taxTypesLoading, error: taxTypesError } = useApi<TaxType[]>(`atmate-gateway/tax/getTypes?refresh=${refreshTrigger}`, { enabled: true });
     const taxTypes = useMemo(() => taxTypesData || [], [taxTypesData]);
-    const { data: existingConfigsResponse, loading: configsLoading, error: configsError } = useApi<ApiNotificationConfig[]>(`notification/getNotificationConfig?refresh=${refreshTrigger}`, { enabled: true });
+    const { data: existingConfigsResponse, loading: configsLoading, error: configsError } = useApi<ApiNotificationConfig[]>(`atmate-gateway/notification/getNotificationConfig?refresh=${refreshTrigger}`, { enabled: true });
     const originalConfigs = useMemo(() => existingConfigsResponse || [], [existingConfigsResponse]);
 
     // --- Processamento de Dados (Agrupamento, Filtragem, Paginação) ---
