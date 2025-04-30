@@ -5,6 +5,8 @@ import { faSearch, faSortUp, faSortDown, faSyncAlt, faInfoCircle, faUser, faLock
 import './Taxes.css';
 import useApi from '../hooks/useApi';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
+
 
 interface Client {
   id: number;
@@ -38,11 +40,20 @@ const Clients = () => {
   // Novos estados para o modal de confirmação
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [clientIdToDelete, setClientIdToDelete] = useState<number | null>(null);
+  const [selectedClientId, setSelectedClientId] = useState<number | null>(null);
 
   const nifMaxLength = 9;
 
   const apiUrl = `atmate-gateway/clients/getClients?refresh=${refreshTrigger}`;
   const { data: clients, loading, error: fetchError } = useApi<Client[]>(apiUrl);
+
+  const handleOpenClientDetails = (id: number) => {
+    setSelectedClientId(id);
+  };
+  
+  const handleCloseClientDetails = () => {
+    setSelectedClientId(null);
+  };
 
   const handleRefresh = useCallback(() => {
     setIsRefreshing(true);
@@ -102,6 +113,13 @@ const Clients = () => {
     if (onlyDigits.length <= nifMaxLength) {
       setNif(onlyDigits);
     }
+  };
+
+
+  const navigate = useNavigate();
+
+  const handleClientClick = (clientId: number) => {
+    navigate(`/clients/${clientId}`);
   };
 
   const handlePasswordChange = (event: ChangeEvent<HTMLInputElement>) => {
@@ -420,7 +438,8 @@ const Clients = () => {
                     <td style={cellStyle} className="text-secondary">{client.birthDate}</td>
                     <td style={cellStyle} className="text-secondary">
                       <div className="action-buttons">
-                        <button className="btn btn-sm btn-outline-secondary rounded-pill shadow-sm me-2">
+                        <button className="btn btn-sm btn-outline-secondary rounded-pill shadow-sm me-2"
+                          onClick={() => handleClientClick(client.id)}>
                           <FontAwesomeIcon icon={faInfoCircle} className="me-1" /> Ver Detalhes
                         </button>
                         <button
@@ -439,6 +458,7 @@ const Clients = () => {
         </div>
       </div>
     </div>
+    
   );
 };
 
