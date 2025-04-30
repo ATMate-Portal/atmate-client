@@ -1,0 +1,226 @@
+/* src/styles/ClientProfilePage.css */
+
+/* Variáveis de Cor para fácil customização */
+:root {
+    --primary-color: #007bff; /* Azul Primário Bootstrap (pode mudar) */
+    --secondary-color: #6c757d; /* Cinza Secundário Bootstrap (pode mudar) */
+    --light-gray: #f8f9fa;
+    --medium-gray: #e9ecef;
+    --dark-gray: #343a40;
+    --text-color: #212529;
+    --white-color: #ffffff;
+    --border-color: #dee2e6;
+    --shadow-color: rgba(0, 0, 0, 0.1);
+    --hover-bg-color: #f1f3f5;
+  }
+  
+  /* Estilo base da página */
+  .client-profile-page {
+    max-width: 100%; /* Mantém o max-width */
+    margin: 0 auto; /* Centraliza o container */
+    padding: 0; /* Ajusta o padding geral */
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    color: var(--text-color);
+    background-color: var(--light-gray); /* Fundo ligeiramente cinza para contraste */
+  }
+  
+  /* Botão Voltar */
+  .back-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem 1.2rem;
+    border-radius: 0.3rem;
+    transition: all 0.2s ease-in-out;
+    border: 1px solid var(--primary-color);
+    background-color: var(--white-color);
+    color: var(--primary-color);
+    font-weight: 500;
+  }
+  
+  .back-button:hover {
+    background-color: var(--primary-color);
+    color: var(--white-color);
+  }
+  
+  /* Navegação Sticky */
+  .profile-nav {
+    position: sticky;
+    top: 0; /* Fixa no topo */
+    z-index: 1020; /* Garante que fica sobre outro conteúdo */
+    background-color: var(--white-color);
+    padding: 0.75rem 1.5rem;
+    margin-bottom: 2rem; /* Espaço abaixo da navegação */
+    border-radius: 0.3rem;
+    box-shadow: 0 2px 5px var(--shadow-color);
+    display: flex;
+    flex-wrap: wrap; /* Permite quebrar linha em ecrãs pequenos */
+    gap: 0.75rem; /* Espaço entre os links */
+    border-bottom: 1px solid var(--border-color);
+  }
+  
+  .profile-nav .nav-link {
+    padding: 0.5rem 1rem;
+    color: var(--secondary-color);
+    text-decoration: none;
+    border-radius: 0.25rem;
+    transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
+    border: 1px solid transparent; /* Para manter o layout consistente no hover */
+    font-weight: 500;
+  }
+  
+  .profile-nav .nav-link:hover,
+  .profile-nav .nav-link:focus {
+    color: var(--primary-color);
+    background-color: var(--hover-bg-color);
+    border-color: var(--medium-gray);
+  }
+  
+  /* Secções de Conteúdo (Cards) */
+  .profile-section {
+    background-color: var(--white-color);
+    border-radius: 0.5rem; /* Bordas mais arredondadas */
+    margin-bottom: 2.5rem; /* Mais espaço entre secções */
+    box-shadow: 0 4px 12px var(--shadow-color); /* Sombra mais suave */
+    overflow: hidden; /* Garante que o conteúdo respeita o border-radius */
+    /* Adiciona margem superior para compensar a altura da nav sticky */
+    scroll-margin-top: 80px; /* Ajuste este valor conforme a altura da sua nav */
+  }
+  
+  .profile-section .card-header {
+    background-color: var(--white-color); /* Remove cor de fundo forte */
+    color: var(--primary-color); /* Cor do texto do cabeçalho */
+    font-size: 1.25rem;
+    font-weight: 600;
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid var(--border-color); /* Linha subtil de separação */
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  
+  /* Cabeçalhos específicos se precisar de cores diferentes */
+  #pessoal .card-header { color: #007bff; }
+  #moradas .card-header { color: #6f42c1; } /* Exemplo: Roxo */
+  #contactos .card-header { color: #fd7e14; } /* Exemplo: Laranja */
+  /* O cabeçalho da Tabela de Impostos será estilizado dentro do seu próprio componente ou pode adicionar estilos aqui se necessário */
+  
+  
+  .profile-section .card-body {
+    padding: 1.5rem;
+  }
+  
+  /* Estilos para Informações Pessoais */
+  .personal-info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); /* Layout responsivo */
+    gap: 1.5rem;
+  }
+  
+  .info-item {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    margin-bottom: 0.8rem;
+    font-size: 0.95rem;
+  }
+  
+  .info-item svg {
+    color: var(--secondary-color);
+    width: 18px; /* Tamanho consistente para ícones */
+    height: 18px;
+    flex-shrink: 0; /* Impede que o ícone encolha */
+  }
+  
+  .info-item strong {
+    font-weight: 600;
+    margin-right: 0.3rem;
+    color: var(--dark-gray);
+  }
+  
+  /* Tabelas Modernas */
+  .table-responsive {
+    overflow-x: auto; /* Garante scroll horizontal em tabelas largas */
+  }
+  
+  .modern-table {
+    width: 100%;
+    border-collapse: collapse; /* Remove espaço entre células */
+    margin-bottom: 0; /* Remove margem padrão da tabela dentro do card */
+    font-size: 0.9rem;
+  }
+  
+  .modern-table th,
+  .modern-table td {
+    padding: 0.9rem 1rem; /* Mais padding */
+    text-align: left;
+    vertical-align: middle; /* Alinha verticalmente ao centro */
+    border-bottom: 1px solid var(--border-color); /* Linhas horizontais subtis */
+  }
+  
+  .modern-table thead th {
+    background-color: var(--light-gray); /* Fundo subtil para cabeçalho */
+    font-weight: 600;
+    color: var(--dark-gray);
+    border-bottom-width: 2px; /* Linha inferior mais grossa no cabeçalho */
+  }
+  
+  .modern-table tbody tr:last-child td {
+    border-bottom: none; /* Remove a borda da última linha */
+  }
+  
+  .modern-table tbody tr:nth-child(even) {
+    background-color: var(--light-gray); /* Zebra striping subtil */
+  }
+  
+  .modern-table tbody tr:hover {
+    background-color: var(--hover-bg-color); /* Efeito hover */
+  }
+  
+  /* Mensagens (Loading, Error, Sem dados) */
+  .text-center { text-align: center; }
+  .text-danger { color: #dc3545; }
+  .text-muted { color: var(--secondary-color); font-style: italic; }
+  .loading-message, .error-message, .no-data-message {
+      padding: 2rem;
+      text-align: center;
+      font-size: 1.1rem;
+      color: var(--secondary-color);
+  }
+  
+  /* Ajustes Responsivos (Exemplo) */
+  @media (max-width: 768px) {
+    .client-profile-page {
+      padding: 1.5rem 1rem;
+    }
+  
+    .profile-nav {
+      padding: 0.75rem;
+    }
+  
+    .profile-section .card-header {
+      padding: 1rem 1.25rem;
+      font-size: 1.1rem;
+    }
+  
+    .profile-section .card-body {
+      padding: 1.25rem;
+    }
+  
+    .personal-info-grid {
+        grid-template-columns: 1fr; /* Coluna única em ecrãs pequenos */
+        gap: 1rem;
+    }
+  
+    .modern-table {
+        font-size: 0.85rem;
+    }
+  
+    .modern-table th,
+    .modern-table td {
+        padding: 0.75rem 0.8rem;
+    }
+  }
+
+
+  

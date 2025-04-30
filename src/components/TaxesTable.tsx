@@ -219,7 +219,7 @@ const TaxesTable: React.FC<TaxesTableProps> = ({ obrigações, loading, error, o
                         Última atualização: {lastUpdated}
                     </p>
                 )}
-                {!lastUpdated && <p className="text-muted mr-3">Aguardando dados...</p>}
+                
             </div>
 
             <div className="d-flex justify-content-between align-items-center mb-3">
