@@ -1,5 +1,5 @@
 import React from 'react';
-import TaxTable from './TaxTable';
+import UrgentTaxTable from './UrgentTaxTable';
 
 interface Tax {
   taxId: number;
@@ -72,7 +72,7 @@ const ClientAccordionItem: React.FC<Props> = ({ client, index, warningDays, urge
         data-bs-parent="#mainAccordion"
       >
         <div className="accordion-body">
-          <TaxTable taxes={taxes} />
+          <UrgentTaxTable taxes={taxes} />
         </div>
       </div>
     </div>

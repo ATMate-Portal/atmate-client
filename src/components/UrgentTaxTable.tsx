@@ -12,7 +12,7 @@ interface Props {
   taxes: Tax[];
 }
 
-const TaxTable: React.FC<Props> = ({ taxes }) => {
+const UrgentTaxTable: React.FC<Props> = ({ taxes }) => {
   return (
     <div className="table-responsive">
       <table className="table custom-table">
@@ -42,4 +42,4 @@ const TaxTable: React.FC<Props> = ({ taxes }) => {
   );
 };
 
-export default TaxTable;
+export default UrgentTaxTable;
