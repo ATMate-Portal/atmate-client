@@ -1,241 +1,344 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import useApi from '../hooks/useApi';
-import TaxesTable from '../components/TaxesTable'; // Assumindo que este componente existe
+import useApi from '../hooks/useApi'; // Assumindo hook existente
+import TaxesTable from '../components/TaxesTable'; // Assumindo componente existente
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faArrowLeft, faMapMarkerAlt, faPhone, faFileInvoiceDollar,
-  faUser, faIdCard, faCalendar, faGlobe, faBuilding
+  faUser, faIdCard, faCalendar, faGlobe, faBuilding, faSpinner,
+  faExclamationTriangle, faSyncAlt,
+  faChevronDown
 } from '@fortawesome/free-solid-svg-icons';
 
+// Importar o CSS final
 import './ClientProfilePage.css';
 
-// Interfaces (mantidas como no original)
-interface AddressDTO {
-  id: number;
-  street: string;
-  doorNumber: string; // Não usado na tabela, mas mantido na interface
-  zipCode: string;
-  city: string;
-  county: string;
-  district: string;
-  parish: string;
-  country: string;
-  addressTypeName: string;
-}
-
-interface ContactDTO {
-  id: number;
-  contactTypeName: string;
-  contact: string;
-  description: string;
-}
-
-interface TaxDTO {
-  identificadorUnico: string;
-  tipo: string;
-  dataLimite: string;
-  clientName: string; // Não usado na tabela, mas mantido na interface
-  valor: string;
-  estado: string;
-  json: string; // Não usado na tabela, mas mantido na interface
-}
-
-interface ClientDetails {
-  id: number;
-  name: string;
-  nif: number;
-  gender: string;
-  nationality: string;
-  associatedColaborator: string;
-  birthDate: string;
-  addresses: AddressDTO[];
-  contacts: ContactDTO[];
-  taxes: TaxDTO[];
-}
+// --- Interfaces (mantidas) ---
+interface AddressDTO { id: number; street: string; doorNumber: string; zipCode: string; city: string; county: string; district: string; parish: string; country: string; addressTypeName: string; }
+interface ContactDTO { id: number; contactTypeName: string; contact: string; description: string; }
+interface TaxDTO { identificadorUnico: string; tipo: string; dataLimite: string; clientName: string; valor: string; estado: string; json: string; }
+interface ClientDetails { id: number; name: string; nif: number; gender: string; nationality: string; associatedColaborator: string; birthDate: string; addresses: AddressDTO[]; contacts: ContactDTO[]; taxes: TaxDTO[]; }
 
 export default function ClientProfilePage() {
-  const { id } = useParams<{ id: string }>(); // Tipagem explícita para id
+  const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  // Use o tipo correto com useApi, assumindo que ele retorna { data, loading, error }
-  const { data: client, loading, error } = useApi<ClientDetails>(id ? `atmate-gateway/clients/${id}` : null);
-  const [lastUpdated, setLastUpdated] = useState<string | null>(null); // Não usado no código visível, mas mantido
-  const [isRefreshing, setIsRefreshing] = useState(false); // Não usado no código visível, mas mantido
+  // Hook API sem refetch
+  const { data: client, loading, error } = useApi<ClientDetails>(id ? `atmate-gateway/clients/${id}` : '');
+  const [lastUpdated, setLastUpdated] = useState<string | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [activeSection, setActiveSection] = useState<string>('#pessoal');
 
-  const handleRefresh = useCallback(() => {
+  const headerRef = useRef<HTMLElement>(null);
+  const [headerHeight, setHeaderHeight] = useState(60);
+
+  // --- Calcular altura do Header ---
+  useEffect(() => {
+      if (headerRef.current) {
+          setHeaderHeight(headerRef.current.offsetHeight + 5);
+      }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [client]); // Dependência apenas em client para recalcular quando o header pode mudar
+
+  // --- Efeito para Intersection Observer ---
+  useEffect(() => {
+    if (!client) return;
+    const observerOptions = {
+      root: null,
+      rootMargin: `-${headerHeight}px 0px -40% 0px`,
+      threshold: 0,
+    };
+    const observerCallback = (entries: IntersectionObserverEntry[]) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          setActiveSection(`#${entry.target.id}`);
+        }
+      });
+    };
+    const observer = new IntersectionObserver(observerCallback, observerOptions);
+    const sections = document.querySelectorAll('.profile-content section[id]');
+    sections.forEach(section => observer.observe(section));
+    return () => sections.forEach(section => observer.unobserve(section));
+  }, [client, headerHeight]);
+
+  // --- Efeito para atualizar timestamp ---
+  useEffect(() => {
+    if (client && !loading && !error) {
+      setLastUpdated(new Date().toISOString()); // Usar ISO string para consistência
+    }
+  }, [client, loading, error]);
+
+  // --- Função de Refresh (sem refetch) ---
+  const handleRefresh = useCallback(async () => {
+    if (!id || isRefreshing) return;
     setIsRefreshing(true);
-    setTimeout(() => setIsRefreshing(false), 1000);
-  }, []);
+    console.log("A tentar atualizar (sem refetch, recarregando a página)...");
+    await new Promise(resolve => setTimeout(resolve, 500));
+    try {
+        window.location.reload();
+    } catch (reloadError) {
+         console.error("Erro ao tentar recarregar a página:", reloadError);
+         setIsRefreshing(false);
+    }
+  }, [id, isRefreshing]);
 
-  // Adiciona uma verificação para o ID antes de renderizar
+  // --- Função Auxiliar para Classes Ativas na Nav Superior ---
+  const getNavLinkClass = (hash: string): string => {
+    return `profile-nav-link ${activeSection === hash ? 'active' : ''}`;
+  };
+
+  // --- Função para Scroll Suave ---
+  const scrollToSection = (event: React.MouseEvent<HTMLAnchorElement>, sectionId: string) => {
+      event.preventDefault();
+      const sectionElement = document.getElementById(sectionId.substring(1));
+      if (sectionElement) {
+          const sectionTop = sectionElement.getBoundingClientRect().top + window.pageYOffset - headerHeight;
+          window.scrollTo({ top: sectionTop, behavior: 'smooth' });
+      }
+  };
+
+  // --- Renderização Condicional Inicial ---
   if (!id) {
-    return <p className="error-message">ID do cliente não fornecido.</p>;
+    // ... (código mantido igual à versão anterior)
+    return (
+        <div className="client-profile-page centered-message">
+          <div className="message-card error">
+            <FontAwesomeIcon icon={faExclamationTriangle} size="2x" />
+            <p>ID do cliente não fornecido na URL.</p>
+            <button onClick={() => navigate('/clients')} className="btn btn-secondary btn-sm">
+               Voltar à Lista
+             </button>
+          </div>
+        </div>
+      );
+  }
+  if (loading && !client) {
+    // ... (código mantido igual à versão anterior)
+    return (
+        <div className="client-profile-page centered-message">
+           <FontAwesomeIcon icon={faSpinner} spin size="3x" color="var(--primary-color)" />
+           <p>A carregar...</p>
+        </div>
+     );
+  }
+  if (error && !loading && !client) {
+    // --- CORRIGIDO: Usa String(error) ---
+    return (
+        <div className="client-profile-page centered-message">
+            <div className="message-card error">
+                <FontAwesomeIcon icon={faExclamationTriangle} size="2x" />
+                <p>Erro ao carregar o perfil.</p>
+                {/* Exibe o erro convertido para string */}
+                <p className="error-details">{error ? String(error) : 'Verifique a sua ligação ou tente mais tarde.'}</p>
+                <button onClick={handleRefresh} className="btn btn-primary btn-sm" disabled={isRefreshing}>
+                    <FontAwesomeIcon icon={isRefreshing ? faSpinner : faSyncAlt} spin={isRefreshing} /> Tentar Novamente
+                </button>
+                 <button onClick={() => navigate('/clients')} className="btn btn-secondary btn-sm mt-2">
+                   Voltar à Lista
+                 </button>
+            </div>
+        </div>
+    );
   }
 
-  //setLastUpdated(`${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}`);
-
+  // --- Layout Principal ---
   return (
-    // Classe principal para aplicar estilos gerais da página
-    <div className="client-profile-page container-fluid mt-5 animate-fade-in">
-      
-
-      {/* Menu de navegação Sticky com novas classes */}
-      <nav className="profile-nav">
-        <a
-          href="#" // Pode manter o '#' ou definir outro link se necessário
-          className="nav-link"
-          onClick={() => navigate('/clients')}
-        >
-          <FontAwesomeIcon icon={faArrowLeft} /> Voltar à lista
-        </a>
-        <a href="#pessoal" className="nav-link">Informações Pessoais</a>
-        <a href="#moradas" className="nav-link">Moradas</a>
-        <a href="#contactos" className="nav-link">Contactos</a>
-        <a href="#impostos" className="nav-link">Impostos</a>
-      </nav>
-
-      {/* Mensagens de Loading e Erro */}
-      {loading && <p className="loading-message">A carregar dados do cliente...</p>}
-      {error && <p className="error-message">Erro ao carregar os dados do cliente. Tente novamente mais tarde.</p>}
-
-      {/* Conteúdo Principal - só renderiza se não houver erro e tiver dados */}
-      {!loading && !error && client && (
-        <>
-          {/* Informacoes Pessoais com nova classe e estrutura */}
-          <section id="pessoal" className="profile-section">
-            <div className="card-header">
-              <FontAwesomeIcon icon={faUser} /> Informações Pessoais
-            </div>
-            <div className="card-body personal-info-grid">
-              {/* Usando divs com classe info-item para melhor controlo de estilo */}
-              <div className="info-item">
-                <FontAwesomeIcon icon={faIdCard} />
-                <span><strong>Nome:</strong> {client.name}</span>
-              </div>
-              <div className="info-item">
-                 <FontAwesomeIcon icon={faIdCard} /> {/* Ícone genérico para NIF */}
-                 <span><strong>NIF:</strong> {client.nif}</span>
-              </div>
-               <div className="info-item">
-                 <FontAwesomeIcon icon={faUser} /> {/* Ícone genérico para Género */}
-                 <span><strong>Género:</strong> {client.gender}</span>
-              </div>
-              <div className="info-item">
-                <FontAwesomeIcon icon={faGlobe} />
-                <span><strong>Nacionalidade:</strong> {client.nationality}</span>
-              </div>
-              <div className="info-item">
-                <FontAwesomeIcon icon={faBuilding} />
-                <span><strong>Colaborador Associado:</strong> {client.associatedColaborator || '-'}</span>
-              </div>
-              <div className="info-item">
-                <FontAwesomeIcon icon={faCalendar} />
-                <span><strong>Data de Nascimento:</strong> {client.birthDate ? new Date(client.birthDate).toLocaleDateString() : '-'}</span>
-              </div>
-            </div>
-          </section>
-
-          {/* Moradas com tabela moderna */}
-          <section id="moradas" className="profile-section">
-            <div className="card-header">
-              <FontAwesomeIcon icon={faMapMarkerAlt} /> Moradas
-            </div>
-            <div className="card-body p-0"> {/* Remove padding do card-body para a tabela ocupar todo o espaço */}
-              {client.addresses && client.addresses.length > 0 ? (
-                <div className="table-responsive">
-                  <table className="modern-table">
-                    <thead>
-                      <tr>
-                        <th>Rua</th><th>Código Postal</th><th>Localidade</th>
-                        <th>Concelho</th><th>Distrito</th><th>Freguesia</th><th>País</th><th>Tipo</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {client.addresses.map(addr => (
-                        <tr key={addr.id}>
-                          <td>{addr.street} {addr.doorNumber}</td> {/* Combina Rua e Nº Porta */}
-                          <td>{addr.zipCode}</td>
-                          <td>{addr.city}</td>
-                          <td>{addr.county}</td>
-                          <td>{addr.district}</td>
-                          <td>{addr.parish}</td>
-                          <td>{addr.country}</td>
-                          <td>{addr.addressTypeName}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+    <div className="client-profile-page">
+      {/* Header Fixo */}
+      <header className="profile-header sticky-top" ref={headerRef}>
+          <div className="header-main-content">
+              {/* ... (Botão Voltar mantido) ... */}
+              <button
+                    onClick={() => navigate('/clients')}
+                    className="btn btn-tertiary back-button"
+                    aria-label="Voltar à lista de clientes"
+                >
+                    <FontAwesomeIcon icon={faArrowLeft} />
+                    <span>Lista de Clientes</span>
+                </button>
+              {/* ... (Navegação mantida) ... */}
+              <nav className="profile-nav-links">
+                    {client && (
+                        <>
+                            <a href="#pessoal" onClick={(e) => scrollToSection(e, '#pessoal')} className={getNavLinkClass('#pessoal')}>Pessoal</a>
+                            <a href="#moradas" onClick={(e) => scrollToSection(e, '#moradas')} className={getNavLinkClass('#moradas')}>Moradas</a>
+                            <a href="#contactos" onClick={(e) => scrollToSection(e, '#contactos')} className={getNavLinkClass('#contactos')}>Contactos</a>
+                            <a href="#impostos" onClick={(e) => scrollToSection(e, '#impostos')} className={getNavLinkClass('#impostos')}>Impostos</a>
+                        </>
+                    )}
+                </nav>
+              {/* ... (Ações/Info mantido) ... */}
+              <div className="header-actions-info">
+                    {lastUpdated && !isRefreshing && (
+                        <span className="last-updated-info" title={`Atualizado em ${new Date(lastUpdated).toLocaleString('pt-PT')}`}>
+                           Atualizado {new Date(lastUpdated).toLocaleTimeString('pt-PT', {hour: '2-digit', minute:'2-digit'})}
+                        </span>
+                    )}
+                     {isRefreshing && (
+                        <span className="last-updated-info">
+                           <FontAwesomeIcon icon={faSpinner} spin /> Atualizando...
+                        </span>
+                     )}
+                    <button onClick={handleRefresh} className="btn btn-icon btn-tertiary" aria-label="Atualizar" disabled={isRefreshing} title="Atualizar Dados">
+                        <FontAwesomeIcon icon={faSyncAlt} />
+                    </button>
                 </div>
-              ) : (
-                <p className="no-data-message">Sem moradas registadas.</p>
-              )}
-            </div>
-          </section>
+          </div>
+      </header>
 
-          {/* Contactos com tabela moderna */}
-          <section id="contactos" className="profile-section">
-            <div className="card-header">
-              <FontAwesomeIcon icon={faPhone} /> Contactos
+      {/* Conteúdo Principal */}
+      <main className="profile-content" style={{ paddingTop: `${headerHeight}px` }} key={id}>
+          {/* Sub-Cabeçalho */}
+          {client && (
+            <div className="profile-subheader">
+                <h1>{client.name}</h1>
+                <span className="client-nif">NIF: {client.nif}</span>
             </div>
-            <div className="card-body p-0"> {/* Remove padding do card-body */}
-              {client.contacts && client.contacts.length > 0 ? (
-                <div className="table-responsive">
-                  <table className="modern-table">
-                    <thead>
-                      <tr>
-                        <th>Tipo</th><th>Contacto</th><th>Descrição</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {client.contacts.map(contact => (
-                        <tr key={contact.id}>
-                          <td>{contact.contactTypeName}</td>
-                          <td>{contact.contact}</td>
-                          <td>{contact.description || '-'}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              ) : (
-                <p className="no-data-message">Sem contactos registados.</p>
-              )}
-            </div>
-          </section>
+          )}
 
-          {/* Secção de Impostos usando o componente TaxesTable */}
-          {/* Adiciona o ID aqui para a navegação funcionar */}
-          <section id="impostos" className="profile-section">
-             {/* O componente TaxesTable pode precisar de um cabeçalho similar ou pode já ter o seu */}
-             {/* Exemplo de como adicionar um cabeçalho se TaxesTable não tiver: */}
-             {/*
-             <div className="card-header">
-               <FontAwesomeIcon icon={faFileInvoiceDollar} /> Impostos e Obrigações
-             </div>
-             */}
-            <TaxesTable
-              obrigações={client.taxes || []} // Garante que é sempre um array
-              loading={loading} // Passa o estado de loading
-              error={error ? 'Erro ao carregar impostos' : null} // Passa mensagem de erro
-              onRefresh={handleRefresh} // Passa a função de refresh
-              lastUpdated={lastUpdated} // Passa lastUpdated
-              isRefreshing={isRefreshing} // Passa isRefreshing
-            />
-            {/* Se TaxesTable não tiver a sua própria mensagem "sem dados", pode adicionar aqui */}
-             {!loading && client.taxes?.length === 0 && (
-                 <div className="card-body">
-                    <p className="no-data-message">Sem impostos ou obrigações registadas.</p>
+          {/* Mensagens Inline */}
+          {loading && client && (
+              <div className="inline-message loading">
+                  <FontAwesomeIcon icon={faSpinner} spin /> A atualizar dados...
+              </div>
+          )}
+          {/* --- CORRIGIDO: Usa String(error) --- */}
+          {error && !loading && client && (
+              <div className="inline-message error">
+                  <FontAwesomeIcon icon={faExclamationTriangle} />
+                  {/* Exibe o erro convertido para string */}
+                  Erro ao carregar atualizações ({error ? String(error) : 'Tente novamente'}).
+                  <button onClick={handleRefresh} className="btn btn-danger btn-xs ml-2" disabled={isRefreshing}>
+                    Tentar Novamente
+                  </button>
+              </div>
+          )}
+           {!loading && !error && !client && (
+                 <div className="message-card info">
+                    <p>Os dados do cliente não estão disponíveis no momento.</p>
                  </div>
-             )}
-          </section>
-        </>
-      )}
+           )}
 
-      {/* Mensagem caso não haja cliente e não esteja a carregar nem com erro */}
-       {!loading && !error && !client && (
-            <p className="no-data-message">Não foi possível encontrar os dados do cliente.</p>
-       )}
+        {/* Secções de Conteúdo */}
+        {client && (
+          <>
+            {/* --- Informações Pessoais --- */}
+            {/* ... (Estrutura mantida igual à V4) ... */}
+            <section id="pessoal" className="profile-section">
+              <div className="section-content personal-info-list">
+                <div className="info-item">
+                  <span className="info-label"><FontAwesomeIcon icon={faIdCard} /> Nome</span>
+                  <span className="info-value">{client.name}</span>
+                </div>
+                <div className="info-item">
+                   <span className="info-label"><FontAwesomeIcon icon={faIdCard} /> NIF</span>
+                   <span className="info-value">{client.nif}</span>
+                </div>
+                <div className="info-item">
+                   <span className="info-label"><FontAwesomeIcon icon={faUser} /> Género</span>
+                   <span className="info-value">{client.gender}</span>
+                </div>
+                <div className="info-item">
+                  <span className="info-label"><FontAwesomeIcon icon={faGlobe} /> Nacionalidade</span>
+                  <span className="info-value">{client.nationality}</span>
+                </div>
+                 <div className="info-item">
+                   <span className="info-label"><FontAwesomeIcon icon={faCalendar} /> Data Nasc.</span>
+                   <span className="info-value">{client.birthDate ? new Date(client.birthDate).toLocaleDateString('pt-PT') : '-'}</span>
+                 </div>
+                <div className="info-item">
+                   <span className="info-label"><FontAwesomeIcon icon={faBuilding} /> Colaborador</span>
+                   <span className="info-value">{client.associatedColaborator || '-'}</span>
+                </div>
+              </div>
+            </section>
 
+
+            {/* --- Moradas --- */}
+            {/* ... (Estrutura mantida igual à V4) ... */}
+            <section id="moradas" className="profile-section">
+              <header className="section-header">
+                <h2><FontAwesomeIcon icon={faMapMarkerAlt} /> Moradas</h2>
+              </header>
+              <div className="section-content content-no-padding">
+                {client.addresses && client.addresses.length > 0 ? (
+                  <div className="table-responsive-wrapper">
+                    <table className="data-table">
+                      <thead>
+                        <tr>
+                          <th>Tipo</th><th>Morada</th><th>Localidade</th><th>Código Postal</th><th>País</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {client.addresses.map(addr => (
+                          <tr key={addr.id}>
+                            <td><span className="badge badge-subtle">{addr.addressTypeName}</span></td>
+                            <td>{addr.street}, {addr.doorNumber}</td><td>{addr.city}</td><td>{addr.zipCode}</td><td>{addr.country}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : ( <div className="empty-state"><FontAwesomeIcon icon={faMapMarkerAlt} size="3x" className="empty-state-icon"/><p>Sem moradas registadas.</p></div> )}
+              </div>
+            </section>
+
+            {/* --- Contactos --- */}
+            {/* ... (Estrutura mantida igual à V4) ... */}
+            <section id="contactos" className="profile-section">
+              <header className="section-header">
+                 <h2><FontAwesomeIcon icon={faPhone} /> Contactos</h2>
+              </header>
+              <div className="section-content content-no-padding">
+                {client.contacts && client.contacts.length > 0 ? (
+                   <div className="table-responsive-wrapper">
+                     <table className="data-table">
+                       <thead>
+                         <tr>
+                           <th>Tipo</th><th>Contacto</th><th>Descrição</th>
+                         </tr>
+                       </thead>
+                       <tbody>
+                         {client.contacts.map(contact => (
+                           <tr key={contact.id}>
+                             <td><span className="badge badge-subtle">{contact.contactTypeName}</span></td><td>{contact.contact}</td><td>{contact.description || '-'}</td>
+                           </tr>
+                         ))}
+                       </tbody>
+                     </table>
+                   </div>
+                ) : ( <div className="empty-state"><FontAwesomeIcon icon={faPhone} size="3x" className="empty-state-icon"/><p>Sem contactos registados.</p></div> )}
+              </div>
+            </section>
+
+            {/* --- Impostos --- */}
+            <section id="impostos" className="profile-section">
+               <header className="section-header">
+                   <h2><FontAwesomeIcon icon={faFileInvoiceDollar} /> Impostos e Obrigações</h2>
+               </header>
+               <div className="section-content"> {/* Remove content-no-padding para testar */}
+                   {/* --- CORRIGIDO: Adiciona wrapper para a tabela --- */}
+                   <div className="table-responsive-wrapper">
+                       <TaxesTable
+                           obrigações={client.taxes || []}
+                           loading={loading && !!client}
+                           error={error ? 'Erro ao carregar' : ''}
+                           onRefresh={handleRefresh}
+                           lastUpdated={lastUpdated}
+                           isRefreshing={isRefreshing}
+                       />
+                   </div>
+                   {/* Tratamento de estado vazio (se necessário) */}
+                   {!loading && client.taxes?.length === 0 && (
+                       <div className="empty-state">
+                           <FontAwesomeIcon icon={faFileInvoiceDollar} size="3x" className="empty-state-icon"/>
+                           <p>Sem impostos ou obrigações registadas.</p>
+                       </div>
+                   )}
+               </div>
+            </section>
+          </>
+        )}
+      </main>
     </div>
   );
 }
