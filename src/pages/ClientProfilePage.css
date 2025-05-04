@@ -1,179 +1,226 @@
 /* src/styles/ClientProfilePage.css */
 
-/* --- Variáveis Globais (Mantidas da V4) --- */
-:root {
-  /* Cores Base */
+/* --- Container Principal - Contém todas as variáveis e estilos base --- */
+.client-profile-main-container {
+  /* Variáveis CSS */
   --primary-color: #0d6efd; --primary-color-dark: #0a58ca; --primary-color-light: #e0edff;
   --secondary-color: #6c757d; --accent-color: #fd7e14;
-  /* Cores Neutras */
   --white-color: #ffffff; --gray-50: #f8f9fa; --gray-100: #f1f3f5; --gray-200: #e9ecef;
   --gray-300: #dee2e6; --gray-400: #ced4da; --gray-500: #adb5bd; --gray-600: #6c757d;
   --gray-700: #495057; --gray-800: #343a40; --gray-900: #212529;
-  /* Cores Semânticas */
   --success-color: #198754; --success-bg: #d1e7dd; --success-border: #a3cfbb;
   --warning-color: #ffc107; --warning-bg: #fff3cd; --warning-border: #ffe69c;
   --danger-color: #dc3545;  --danger-bg: #f8d7da;  --danger-border: #f1aeb5;
   --info-color: #0dcaf0;   --info-bg: #cff4fc;   --info-border: #9eeaf9;
   --light-color: var(--gray-100); --dark-color: var(--gray-800);
-  /* Sombras */
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04); --shadow-md: 0 3px 6px rgba(0, 0, 0, 0.05);
   --shadow-lg: 0 10px 20px rgba(0, 0, 0, 0.07);
-  /* Tipografia */
   --font-family-sans: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --font-size-base: 0.9375rem; --font-size-sm: 0.8125rem; --font-size-lg: 1.125rem;
   --font-size-xl: 1.375rem; --font-size-h1: 1.625rem; --line-height-base: 1.6;
   --font-weight-light: 300; --font-weight-normal: 400; --font-weight-medium: 500;
   --font-weight-semibold: 600; --font-weight-bold: 700;
-  /* Espaçamento */
   --space-1: 0.25rem; --space-2: 0.5rem; --space-3: 0.75rem; --space-4: 1rem;
   --space-5: 1.25rem; --space-6: 1.5rem; --space-8: 2rem; --space-10: 2.5rem;
   --space-12: 3rem; --space-16: 4rem;
-  /* Bordas */
   --border-radius-sm: 0.25rem; --border-radius-md: 0.375rem; --border-radius-lg: 0.625rem;
   --border-radius-xl: 1rem; --border-radius-pill: 50rem; --border-width: 1px;
   --border-color: var(--gray-300);
-  /* Transições */
   --transition-fast: all 0.15s ease-in-out; --transition-base: all 0.25s ease-in-out;
+
+  /* Estilos Base */
+  margin: 0;
+  background-color: var(--white-color); /* Fundo principal branco */
+  color: var(--gray-700);
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-base);
+  line-height: var(--line-height-base);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  box-sizing: border-box;
 }
 
-/* --- Estilo Base da Página --- */
-body { margin: 0; background-color: var(--gray-100); color: var(--gray-700); font-family: var(--font-family-sans); font-size: var(--font-size-base); line-height: var(--line-height-base); -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
-.client-profile-page { max-width: 100%; }
+/* Aplica box-sizing a todos os elementos DENTRO do container */
+.client-profile-main-container *,
+.client-profile-main-container *::before,
+.client-profile-main-container *::after {
+  box-sizing: inherit;
+}
+
+/* --- Container Interno de Layout --- */
+.client-profile-main-container .client-profile-page {
+  max-width: 100%;
+}
 
 /* --- Header Fixo (Topo) --- */
-.profile-header { background-color: var(--white-color); border-bottom: var(--border-width) solid var(--border-color); padding: 0 var(--space-6); box-shadow: var(--shadow-sm); z-index: 1050; height: auto; min-height: 60px; }
-.profile-header.sticky-top { position: sticky; top: 0; }
-.header-main-content { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: var(--space-4); min-height: 60px; max-width: 1320px; margin: 0 auto; padding: var(--space-2) 0; }
-.profile-nav-links { display: flex; align-items: center; gap: var(--space-1); flex-grow: 1; justify-content: center; }
-.profile-nav-link { padding: var(--space-2) var(--space-3); font-size: var(--font-size-sm); font-weight: var(--font-weight-medium); color: var(--gray-600); text-decoration: none; border-radius: var(--border-radius-md); border-bottom: 2px solid transparent; transition: var(--transition-fast); white-space: nowrap; }
-.profile-nav-link:hover { color: var(--gray-900); background-color: var(--gray-100); }
-.profile-nav-link.active { color: var(--primary-color); font-weight: var(--font-weight-semibold); border-bottom-color: var(--primary-color); }
-.header-actions-info { display: flex; align-items: center; gap: var(--space-3); }
-.last-updated-info { font-size: var(--font-size-sm); color: var(--gray-500); display: flex; align-items: center; gap: var(--space-2); white-space: nowrap; }
+.client-profile-main-container .profile-header {
+  background-color: var(--white-color);
+  border-bottom: var(--border-width) solid var(--border-color);
+  padding: 0 var(--space-6);
+  box-shadow: var(--shadow-sm);
+  z-index: 1050; height: auto; min-height: 60px;
+}
+.client-profile-main-container .profile-header.sticky-top { position: sticky; top: 0; }
+.client-profile-main-container .header-main-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  min-height: 60px;
+  /* --- CORRIGIDO: Remove max-width e margin auto --- */
+  max-width: none;
+  margin: 0;
+  padding: var(--space-2) 0; /* Mantém padding vertical */
+  width: 100%; /* Garante que ocupa a largura do .profile-header */
+}
+.client-profile-main-container .profile-nav-links { display: flex; align-items: center; gap: var(--space-1); flex-grow: 1; justify-content: center; }
+.client-profile-main-container .profile-nav-link { padding: var(--space-2) var(--space-3); font-size: var(--font-size-sm); font-weight: var(--font-weight-medium); color: var(--gray-600); text-decoration: none; border-radius: var(--border-radius-md); border-bottom: 2px solid transparent; transition: var(--transition-fast); white-space: nowrap; }
+.client-profile-main-container .profile-nav-link:hover { color: var(--gray-900); background-color: var(--gray-100); }
+.client-profile-main-container .profile-nav-link.active { color: var(--primary-color); font-weight: var(--font-weight-semibold); border-bottom-color: var(--primary-color); }
+.client-profile-main-container .header-actions-info { display: flex; align-items: center; gap: var(--space-3); }
+.client-profile-main-container .last-updated-info { font-size: var(--font-size-sm); color: var(--gray-500); display: flex; align-items: center; gap: var(--space-2); white-space: nowrap; }
 
 /* --- Conteúdo Principal --- */
-.profile-content { max-width: 1140px; margin: 0 auto; padding: var(--space-8) var(--space-6); /* Padding geral, topo será ajustado via JS */ }
-.profile-subheader { background-color: var(--white-color); padding: var(--space-6); margin-bottom: var(--space-8); border-radius: var(--border-radius-xl); box-shadow: var(--shadow-sm); border: var(--border-width) solid var(--border-color); }
-.profile-subheader h1 { font-size: var(--font-size-h1); font-weight: var(--font-weight-semibold); color: var(--gray-900); margin: 0 0 var(--space-1) 0; line-height: 1.3; }
-.profile-subheader .client-nif { font-size: var(--font-size-sm); color: var(--secondary-color); font-weight: var(--font-weight-normal); display: block; }
+.client-profile-main-container .profile-content {
+  /* --- CORRIGIDO: Remove max-width e margin auto --- */
+  max-width: none;
+  margin: 0;
+  /* Mantém padding lateral e superior (ajustado por JS) */
+  padding: var(--space-8) var(--space-6);
+  /* Pode adicionar um fundo ligeiramente diferente se quiser contraste */
+  /* background-color: var(--gray-50); */
+}
+.client-profile-main-container .profile-subheader {
+  background-color: var(--white-color);
+  padding: var(--space-6);
+  margin-bottom: var(--space-8);
+  border-radius: var(--border-radius-xl);
+  box-shadow: var(--shadow-sm);
+  border: var(--border-width) solid var(--border-color);
+}
+.client-profile-main-container .profile-subheader h1 { font-size: var(--font-size-h1); font-weight: var(--font-weight-semibold); color: var(--gray-900); margin: 0 0 var(--space-1) 0; line-height: 1.3; }
+.client-profile-main-container .profile-subheader .client-nif { font-size: var(--font-size-sm); color: var(--secondary-color); font-weight: var(--font-weight-normal); display: block; }
 
 /* --- Secções de Conteúdo --- */
-.profile-section { background-color: var(--white-color); border-radius: var(--border-radius-xl); margin-bottom: var(--space-8); box-shadow: none; border: var(--border-width) solid var(--border-color); overflow: hidden; transition: var(--transition-base); }
-.profile-section:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
-.section-header { display: flex; justify-content: space-between; align-items: center; padding: var(--space-4) var(--space-6); border-bottom: var(--border-width) solid var(--border-color); }
-.section-header h2 { margin: 0; font-size: var(--font-size-lg); font-weight: var(--font-weight-semibold); color: var(--gray-800); display: flex; align-items: center; gap: var(--space-3); }
-.section-content { padding: var(--space-6); }
-.section-content.content-no-padding { padding: 0; } /* Manter esta classe caso seja útil noutras seções */
+.client-profile-main-container .profile-section {
+  background-color: var(--white-color);
+  border-radius: var(--border-radius-xl);
+  margin-bottom: var(--space-8);
+  box-shadow: none;
+  border: var(--border-width) solid var(--border-color);
+  overflow: hidden;
+  transition: var(--transition-base);
+}
+.client-profile-main-container .profile-section:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+.client-profile-main-container .section-header { display: flex; justify-content: space-between; align-items: center; padding: var(--space-4) var(--space-6); border-bottom: var(--border-width) solid var(--border-color); }
+.client-profile-main-container .section-header h2 { margin: 0; font-size: var(--font-size-lg); font-weight: var(--font-weight-semibold); color: var(--gray-800); display: flex; align-items: center; gap: var(--space-3); }
+.client-profile-main-container .section-content { padding: var(--space-6); }
+.client-profile-main-container .section-content.content-no-padding { padding: 0; }
 
 /* --- Informações Pessoais Específico (Lista) --- */
-.personal-info-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: var(--space-5) var(--space-6); }
-.info-item { padding: var(--space-2) 0; border-bottom: var(--border-width) dashed var(--gray-200); }
-.info-item:last-child { border-bottom: none; }
-.info-label { display: flex; align-items: center; gap: var(--space-2); font-size: var(--font-size-sm); color: var(--gray-600); font-weight: var(--font-weight-normal); margin-bottom: var(--space-1); }
-.info-label svg { width: 14px; height: 14px; color: var(--gray-500); }
-.info-value { font-size: var(--font-size-base); font-weight: var(--font-weight-medium); color: var(--gray-800); word-break: break-word; display: block; padding-left: calc(14px + var(--space-2)); }
+.client-profile-main-container .personal-info-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: var(--space-5) var(--space-6); }
+.client-profile-main-container .info-item { padding: var(--space-2) 0; border-bottom: var(--border-width) dashed var(--gray-200); }
+.client-profile-main-container .info-item:last-child { border-bottom: none; }
+.client-profile-main-container .info-label { display: flex; align-items: center; gap: var(--space-2); font-size: var(--font-size-sm); color: var(--gray-600); font-weight: var(--font-weight-normal); margin-bottom: var(--space-1); }
+.client-profile-main-container .info-label svg { width: 14px; height: 14px; color: var(--gray-500); }
+.client-profile-main-container .info-value { font-size: var(--font-size-base); font-weight: var(--font-weight-medium); color: var(--gray-800); word-break: break-word; display: block; padding-left: calc(14px + var(--space-2)); }
 
 /* --- Tabelas de Dados --- */
-.table-responsive-wrapper {
-  overflow-x: auto;
-  /* Adiciona um padding interno se a tabela não tiver margens/padding suficientes */
-  /* padding: var(--space-1); */
-  /* Garante que o wrapper ocupa a largura disponível no seu container */
-  width: 100%;
+.client-profile-main-container .table-responsive-wrapper { overflow-x: auto; width: 100%; }
+.client-profile-main-container .data-table { width: 100%; border-collapse: collapse; font-size: var(--font-size-sm); }
+.client-profile-main-container .data-table th,
+.client-profile-main-container .data-table td { padding: var(--space-3) var(--space-5); text-align: left; vertical-align: middle; border-bottom: var(--border-width) solid var(--gray-200); white-space: nowrap; }
+.client-profile-main-container .data-table td:nth-child(2),
+.client-profile-main-container .data-table td:nth-child(3) { white-space: normal; }
+.client-profile-main-container .data-table thead th {
+  font-weight: var(--font-weight-semibold);
+  background-color: var(--white-color); /* Fundo branco consistente */
+  color: var(--gray-700);
+  border-bottom-width: 2px;
+  border-bottom-color: var(--gray-300);
+  position: sticky; top: 0; z-index: 10;
 }
-.data-table { width: 100%; border-collapse: collapse; font-size: var(--font-size-sm); }
-.data-table th, .data-table td { padding: var(--space-3) var(--space-5); text-align: left; vertical-align: middle; border-bottom: var(--border-width) solid var(--gray-200); white-space: nowrap; }
-.data-table td:nth-child(2), .data-table td:nth-child(3) { white-space: normal; }
-.data-table thead th { font-weight: var(--font-weight-semibold); background-color: var(--gray-50); color: var(--gray-700); border-bottom-width: 2px; border-bottom-color: var(--gray-300); position: sticky; top: 0; z-index: 10; }
-.data-table tbody tr { transition: background-color var(--transition-fast); }
-.data-table tbody tr:hover { background-color: var(--primary-color-light); }
+.client-profile-main-container .data-table tbody tr { transition: background-color var(--transition-fast); }
+.client-profile-main-container .data-table tbody tr:hover { background-color: var(--primary-color-light); }
 
-/* --- CORRIGIDO: Tenta forçar a largura da tabela DENTRO do wrapper na seção de impostos --- */
-/* Se isto não funcionar, o problema está DENTRO do componente TaxesTable */
-#impostos .table-responsive-wrapper > table {
-    width: 100%;
-    /* Considerar adicionar min-width se as colunas internas da TaxesTable forem muito pequenas */
-    /* Exemplo: min-width: 800px; */
-}
-/* Estilo para tabelas diretamente dentro de .section-content (caso o wrapper não seja usado) */
-#impostos .section-content > table {
-    width: 100%;
-}
-
+/* --- Forçar largura da tabela de impostos (se necessário) --- */
+.client-profile-main-container #impostos .table-responsive-wrapper > table { width: 100%; /* min-width: 800px; */ }
+.client-profile-main-container #impostos .section-content > table { width: 100%; display: block; overflow-x: auto; }
 
 /* --- Badges (Subtle) --- */
-.badge { display: inline-block; padding: var(--space-1) var(--space-2); font-size: 0.75rem; font-weight: var(--font-weight-medium); line-height: 1; text-align: center; white-space: nowrap; vertical-align: baseline; border-radius: var(--border-radius-sm); }
-.badge-subtle { color: var(--gray-700); background-color: var(--gray-200); border: 1px solid var(--gray-300); }
+.client-profile-main-container .badge { display: inline-block; padding: var(--space-1) var(--space-2); font-size: 0.75rem; font-weight: var(--font-weight-medium); line-height: 1; text-align: center; white-space: nowrap; vertical-align: baseline; border-radius: var(--border-radius-sm); }
+.client-profile-main-container .badge-subtle { color: var(--gray-700); background-color: var(--gray-200); border: 1px solid var(--gray-300); }
 
-/* --- Estados (Loading, Error, Empty - Mantidos) --- */
-.centered-message { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 80vh; text-align: center; padding: var(--space-8); }
-.message-card { background-color: var(--white-color); padding: var(--space-8); border-radius: var(--border-radius-lg); box-shadow: var(--shadow-md); max-width: 450px; width: 100%; }
-.message-card p { margin: var(--space-4) 0; }
-.message-card .error-details { font-size: var(--font-size-sm); color: var(--gray-600); }
-.message-card.error { border-top: 4px solid var(--danger-color); }
-.message-card.error svg { color: var(--danger-color); }
-.message-card.info { border-top: 4px solid var(--info-color); }
-.message-card.info svg { color: var(--info-color); }
-.inline-message { padding: var(--space-3) var(--space-4); margin-bottom: var(--space-4); border-radius: var(--border-radius-md); display: flex; align-items: center; gap: var(--space-2); font-size: var(--font-size-sm); font-weight: var(--font-weight-medium); border: var(--border-width) solid; }
-.inline-message.loading { background-color: var(--info-bg); border-color: var(--info-border); color: var(--info-color);}
-.inline-message.error { background-color: var(--danger-bg); border-color: var(--danger-border); color: var(--danger-color); }
-.inline-message button { margin-left: auto; }
-.empty-state { padding: var(--space-10) var(--space-5); text-align: center; min-height: 200px; display: flex; flex-direction: column; justify-content: center; align-items: center; border-top: var(--border-width) solid var(--gray-200); margin-top: -1px; }
-/* Modificação: aplica a empty-state diretamente ao wrapper se a tabela não existir */
-#impostos .section-content > .empty-state:first-child,
-#moradas .section-content > .empty-state:first-child,
-#contactos .section-content > .empty-state:first-child { border-top: none; margin-top: 0; padding: var(--space-10) var(--space-5); } /* Padding original */
-.empty-state-icon { color: var(--gray-400); margin-bottom: var(--space-4); }
-.empty-state p { color: var(--gray-600); font-weight: var(--font-weight-medium); margin-bottom: var(--space-4); }
+/* --- Estados (Loading, Error, Empty) --- */
+.client-profile-main-container .centered-message { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 50vh; text-align: center; padding: var(--space-8); }
+.client-profile-main-container .message-card { background-color: var(--white-color); padding: var(--space-8); border-radius: var(--border-radius-lg); box-shadow: var(--shadow-md); max-width: 450px; width: 100%; margin: var(--space-8) auto; }
+.client-profile-main-container .message-card p { margin: var(--space-4) 0; }
+.client-profile-main-container .message-card .error-details { font-size: var(--font-size-sm); color: var(--gray-600); }
+.client-profile-main-container .message-card.error { border-top: 4px solid var(--danger-color); }
+.client-profile-main-container .message-card.error svg { color: var(--danger-color); }
+.client-profile-main-container .message-card.info { border-top: 4px solid var(--info-color); }
+.client-profile-main-container .message-card.info svg { color: var(--info-color); }
+.client-profile-main-container .inline-message { padding: var(--space-3) var(--space-4); margin-bottom: var(--space-4); border-radius: var(--border-radius-md); display: flex; align-items: center; gap: var(--space-2); font-size: var(--font-size-sm); font-weight: var(--font-weight-medium); border: var(--border-width) solid; }
+.client-profile-main-container .inline-message.loading { background-color: var(--info-bg); border-color: var(--info-border); color: var(--info-color);}
+.client-profile-main-container .inline-message.error { background-color: var(--danger-bg); border-color: var(--danger-border); color: var(--danger-color); }
+.client-profile-main-container .inline-message button { margin-left: auto; }
+.client-profile-main-container .empty-state { padding: var(--space-10) var(--space-5); text-align: center; min-height: 200px; display: flex; flex-direction: column; justify-content: center; align-items: center; border-top: var(--border-width) solid var(--gray-200); margin-top: -1px; }
+.client-profile-main-container #impostos .section-content > .empty-state:first-child,
+.client-profile-main-container #moradas .section-content > .empty-state:first-child,
+.client-profile-main-container #contactos .section-content > .empty-state:first-child,
+.client-profile-main-container #impostos .section-content > .table-responsive-wrapper + .empty-state { border-top: none; margin-top: 0; }
+.client-profile-main-container .empty-state-icon { color: var(--gray-400); margin-bottom: var(--space-4); }
+.client-profile-main-container .empty-state p { color: var(--gray-600); font-weight: var(--font-weight-medium); margin-bottom: var(--space-4); }
 
-/* --- Botões (Mantidos da V4) --- */
-.btn { display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2); padding: var(--space-2) var(--space-4); font-size: var(--font-size-sm); font-weight: var(--font-weight-medium); line-height: 1.5; text-align: center; text-decoration: none; vertical-align: middle; cursor: pointer; user-select: none; border: var(--border-width) solid transparent; border-radius: var(--border-radius-md); transition: var(--transition-fast); }
-.btn:disabled { cursor: not-allowed; opacity: 0.65; }
-.btn-sm { padding: var(--space-1) var(--space-2); font-size: 0.75rem; }
-.btn-xs { padding: var(--space-1) var(--space-1); font-size: 0.7rem; }
-.btn-primary { color: var(--white-color); background-color: var(--primary-color); border-color: var(--primary-color); }
-.btn-primary:hover:not(:disabled) { background-color: var(--primary-color-dark); border-color: var(--primary-color-dark); }
-.btn-secondary { color: var(--gray-800); background-color: var(--gray-200); border-color: var(--gray-300); }
-.btn-secondary:hover:not(:disabled) { background-color: var(--gray-300); border-color: var(--gray-400); }
-.btn-tertiary { color: var(--gray-700); background-color: transparent; border-color: transparent; }
-.btn-tertiary:hover:not(:disabled) { background-color: var(--gray-100); color: var(--gray-900); }
-.btn-danger { color: var(--white-color); background-color: var(--danger-color); border-color: var(--danger-color); }
-.btn-danger:hover:not(:disabled) { background-color: #bb2d3b; border-color: #b02a37; }
-.btn-icon { padding: var(--space-2); line-height: 1; }
-.btn-icon svg { font-size: 1.1em; }
-.ml-2 { margin-left: var(--space-2); }
-.mt-2 { margin-top: var(--space-2); }
+/* --- Botões --- */
+.client-profile-main-container .btn { display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2); padding: var(--space-2) var(--space-4); font-size: var(--font-size-sm); font-weight: var(--font-weight-medium); line-height: 1.5; text-align: center; text-decoration: none; vertical-align: middle; cursor: pointer; user-select: none; border: var(--border-width) solid transparent; border-radius: var(--border-radius-md); transition: var(--transition-fast); }
+.client-profile-main-container .btn:disabled { cursor: not-allowed; opacity: 0.65; }
+.client-profile-main-container .btn-sm { padding: var(--space-1) var(--space-2); font-size: 0.75rem; }
+.client-profile-main-container .btn-xs { padding: var(--space-1) var(--space-1); font-size: 0.7rem; }
+.client-profile-main-container .btn-primary { color: var(--white-color); background-color: var(--primary-color); border-color: var(--primary-color); }
+.client-profile-main-container .btn-primary:hover:not(:disabled) { background-color: var(--primary-color-dark); border-color: var(--primary-color-dark); }
+.client-profile-main-container .btn-secondary { color: var(--gray-800); background-color: var(--gray-200); border-color: var(--gray-300); }
+.client-profile-main-container .btn-secondary:hover:not(:disabled) { background-color: var(--gray-300); border-color: var(--gray-400); }
+.client-profile-main-container .btn-tertiary { color: var(--gray-700); background-color: transparent; border-color: transparent; }
+.client-profile-main-container .btn-tertiary:hover:not(:disabled) { background-color: var(--gray-100); color: var(--gray-900); }
+.client-profile-main-container .btn-danger { color: var(--white-color); background-color: var(--danger-color); border-color: var(--danger-color); }
+.client-profile-main-container .btn-danger:hover:not(:disabled) { background-color: #bb2d3b; border-color: #b02a37; }
+.client-profile-main-container .btn-icon { padding: var(--space-2); line-height: 1; }
+.client-profile-main-container .btn-icon svg { font-size: 1.1em; }
+.client-profile-main-container .ml-2 { margin-left: var(--space-2); }
+.client-profile-main-container .mt-2 { margin-top: var(--space-2); }
 
-
-/* --- Responsividade (Mantida da V4) --- */
+/* --- Responsividade --- */
+/* Remove a media query para 1400px, já que não há mais max-width fixo */
 @media (max-width: 992px) {
-  .profile-header { padding: 0 var(--space-4); }
-  .profile-content { padding: var(--space-6) var(--space-4); }
-  .personal-info-list { grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); }
-  .profile-subheader { padding: var(--space-5); }
+  .client-profile-main-container .profile-header { padding: 0 var(--space-4); }
+  .client-profile-main-container .profile-content { padding: var(--space-6) var(--space-4); }
+  .client-profile-main-container .personal-info-list { grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); }
+  .client-profile-main-container .profile-subheader { padding: var(--space-5); }
 }
 @media (max-width: 768px) {
-  :root { --font-size-base: 0.875rem; }
-  .profile-header { padding: 0 var(--space-3); min-height: 50px; }
-  .header-main-content { gap: var(--space-2); min-height: 50px; padding: var(--space-1) 0; }
-  .profile-nav-links { order: 3; width: 100%; justify-content: space-around; padding: var(--space-1) 0; border-top: 1px solid var(--border-color); margin-top: var(--space-1); }
-  .profile-nav-link { padding: var(--space-2); font-size: 0.75rem; }
-  .header-actions-info { order: 2; }
-  .last-updated-info { display: none; }
-  .profile-header .back-button span { display: none; }
-  .profile-header .back-button { padding: var(--space-2); }
-  .profile-content { padding: var(--space-4) var(--space-3); }
-  .profile-subheader { padding: var(--space-4); margin-bottom: var(--space-6); }
-  .profile-subheader h1 { font-size: 1.375rem; }
-  .section-header { padding: var(--space-3) var(--space-4); }
-  .section-header h2 { font-size: 1rem; }
-  .section-content { padding: var(--space-4); }
-  .personal-info-list { grid-template-columns: 1fr; gap: var(--space-3); }
-  .info-value { padding-left: 0; }
-  .data-table th, .data-table td { padding: var(--space-2) var(--space-3); }
+  .client-profile-main-container .profile-header { padding: 0 var(--space-3); min-height: 50px; }
+  .client-profile-main-container .header-main-content { gap: var(--space-2); min-height: 50px; padding: var(--space-1) 0; }
+  .client-profile-main-container .profile-nav-links { order: 3; width: 100%; justify-content: space-around; padding: var(--space-1) 0; border-top: 1px solid var(--border-color); margin-top: var(--space-1); }
+  .client-profile-main-container .profile-nav-link { padding: var(--space-2); font-size: 0.75rem; }
+  .client-profile-main-container .header-actions-info { order: 2; }
+  .client-profile-main-container .last-updated-info { display: none; }
+  .client-profile-main-container .profile-header .back-button span { display: none; }
+  .client-profile-main-container .profile-header .back-button { padding: var(--space-2); }
+  .client-profile-main-container .profile-content { padding: var(--space-4) var(--space-3); }
+  .client-profile-main-container .profile-subheader { padding: var(--space-4); margin-bottom: var(--space-6); }
+  .client-profile-main-container .profile-subheader h1 { font-size: 1.375rem; }
+  .client-profile-main-container .section-header { padding: var(--space-3) var(--space-4); }
+  .client-profile-main-container .section-header h2 { font-size: 1rem; }
+  .client-profile-main-container .section-content { padding: var(--space-4); }
+  .client-profile-main-container .personal-info-list { grid-template-columns: 1fr; gap: var(--space-3); }
+  .client-profile-main-container .info-value { padding-left: 0; }
+  .client-profile-main-container .data-table th,
+  .client-profile-main-container .data-table td { padding: var(--space-2) var(--space-3); }
 }
 @media (max-width: 480px) {
-    .profile-nav-links { gap: 0; justify-content: space-between;}
-    .profile-nav-link { padding: var(--space-2) var(--space-1); }
-    .data-table { font-size: 0.75rem; }
+    .client-profile-main-container .profile-nav-links { gap: 0; justify-content: space-between;}
+    .client-profile-main-container .profile-nav-link { padding: var(--space-2) var(--space-1); }
+    .client-profile-main-container .data-table { font-size: 0.75rem; }
 }
