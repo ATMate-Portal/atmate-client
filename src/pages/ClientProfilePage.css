@@ -2,7 +2,7 @@
 
 /* --- Container Principal - Contém todas as variáveis e estilos base --- */
 .client-profile-main-container {
-  /* Variáveis CSS */
+  /* Variáveis CSS (mantidas como no original) */
   --primary-color: #0d6efd; --primary-color-dark: #0a58ca; --primary-color-light: #e0edff;
   --secondary-color: #6c757d; --accent-color: #fd7e14;
   --white-color: #ffffff; --gray-50: #f8f9fa; --gray-100: #f1f3f5; --gray-200: #e9ecef;
@@ -10,7 +10,7 @@
   --gray-700: #495057; --gray-800: #343a40; --gray-900: #212529;
   --success-color: #198754; --success-bg: #d1e7dd; --success-border: #a3cfbb;
   --warning-color: #ffc107; --warning-bg: #fff3cd; --warning-border: #ffe69c;
-  --danger-color: #dc3545;  --danger-bg: #f8d7da;  --danger-border: #f1aeb5;
+  --danger-color: #dc3545;  --danger-bg: #f8d7da;  --danger-border: #f1aeb5; --danger-color-dark: #b02a37;
   --info-color: #0dcaf0;   --info-bg: #cff4fc;   --info-border: #9eeaf9;
   --light-color: var(--gray-100); --dark-color: var(--gray-800);
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04); --shadow-md: 0 3px 6px rgba(0, 0, 0, 0.05);
@@ -27,10 +27,14 @@
   --border-radius-xl: 1rem; --border-radius-pill: 50rem; --border-width: 1px;
   --border-color: var(--gray-300);
   --transition-fast: all 0.15s ease-in-out; --transition-base: all 0.25s ease-in-out;
+  --profile-content-max-width: 1400px; /* Exemplo de largura máxima, ajuste conforme necessário */
 
+  /* MELHORIA 1: Estilos do container principal da página */
+  padding: var(--space-6);           /* Espaçamento à volta da "caixa" de conteúdo */
+  min-height: 100vh;                 /* Garante que o fundo ocupe toda a altura */
+  
   /* Estilos Base */
   margin: 0;
-  background-color: var(--white-color); /* Fundo principal branco */
   color: var(--gray-700);
   font-family: var(--font-family-sans);
   font-size: var(--font-size-base);
@@ -40,16 +44,20 @@
   box-sizing: border-box;
 }
 
-/* Aplica box-sizing a todos os elementos DENTRO do container */
 .client-profile-main-container *,
 .client-profile-main-container *::before,
 .client-profile-main-container *::after {
   box-sizing: inherit;
 }
 
-/* --- Container Interno de Layout --- */
+/* MELHORIA 1: A "CAIXA" principal que encapsula o conteúdo do perfil */
 .client-profile-main-container .client-profile-page {
-  max-width: 100%;
+  background-color: var(--white-color);
+  border-radius: var(--border-radius-xl); /* Bordas redondas principais */
+  box-shadow: var(--shadow-lg);
+  max-width: var(--profile-content-max-width); /* Usa a variável para largura máxima */
+  margin: 0 auto; /* Centra a caixa se max-width for definido e menor que a viewport */
+  /* overflow: hidden; foi removido para não quebrar o sticky do header em relação ao viewport */
 }
 
 /* --- Header Fixo (Topo) --- */
@@ -57,10 +65,17 @@
   background-color: var(--white-color);
   border-bottom: var(--border-width) solid var(--border-color);
   padding: 0 var(--space-6);
-  box-shadow: var(--shadow-sm);
-  z-index: 1050; height: auto; min-height: 60px;
+  box-shadow: none; /* A sombra principal está no .client-profile-page */
+  z-index: 1050;
+  height: auto;
+  min-height: 60px;
+  position: sticky;
+  top: 0;
+
+  /* Arredondar cantos superiores para coincidir com .client-profile-page */
+  border-top-left-radius: var(--border-radius-xl);
+  border-top-right-radius: var(--border-radius-xl);
 }
-.client-profile-main-container .profile-header.sticky-top { position: sticky; top: 0; }
 .client-profile-main-container .header-main-content {
   display: flex;
   align-items: center;
@@ -68,11 +83,8 @@
   flex-wrap: wrap;
   gap: var(--space-4);
   min-height: 60px;
-  /* --- CORRIGIDO: Remove max-width e margin auto --- */
-  max-width: none;
-  margin: 0;
-  padding: var(--space-2) 0; /* Mantém padding vertical */
-  width: 100%; /* Garante que ocupa a largura do .profile-header */
+  padding: var(--space-2) 0;
+  width: 100%;
 }
 .client-profile-main-container .profile-nav-links { display: flex; align-items: center; gap: var(--space-1); flex-grow: 1; justify-content: center; }
 .client-profile-main-container .profile-nav-link { padding: var(--space-2) var(--space-3); font-size: var(--font-size-sm); font-weight: var(--font-weight-medium); color: var(--gray-600); text-decoration: none; border-radius: var(--border-radius-md); border-bottom: 2px solid transparent; transition: var(--transition-fast); white-space: nowrap; }
@@ -81,44 +93,52 @@
 .client-profile-main-container .header-actions-info { display: flex; align-items: center; gap: var(--space-3); }
 .client-profile-main-container .last-updated-info { font-size: var(--font-size-sm); color: var(--gray-500); display: flex; align-items: center; gap: var(--space-2); white-space: nowrap; }
 
+
 /* --- Conteúdo Principal --- */
 .client-profile-main-container .profile-content {
-  /* --- CORRIGIDO: Remove max-width e margin auto --- */
-  max-width: none;
-  margin: 0;
-  /* Mantém padding lateral e superior (ajustado por JS) */
   padding: var(--space-8) var(--space-6);
-  /* Pode adicionar um fundo ligeiramente diferente se quiser contraste */
-  /* background-color: var(--gray-50); */
+  /* Arredondar cantos inferiores para coincidir com .client-profile-page */
+  /* Isto garante que o conteúdo não "vaze" por baixo dos cantos arredondados da caixa principal */
+  border-bottom-left-radius: var(--border-radius-xl);
+  border-bottom-right-radius: var(--border-radius-xl);
+  /* Se houver um footer DENTRO de .client-profile-page, ele é que deveria ter estes radius.
+     Assumindo que main.profile-content é o último bloco principal. */
 }
 .client-profile-main-container .profile-subheader {
-  background-color: var(--white-color);
+  background-color: var(--white-color); /* Pode ser transparente se a secçãoPessoal for logo a seguir */
   padding: var(--space-6);
   margin-bottom: var(--space-8);
-  border-radius: var(--border-radius-xl);
+  border-radius: var(--border-radius-lg); /* Raio menor para elementos internos */
   box-shadow: var(--shadow-sm);
   border: var(--border-width) solid var(--border-color);
 }
 .client-profile-main-container .profile-subheader h1 { font-size: var(--font-size-h1); font-weight: var(--font-weight-semibold); color: var(--gray-900); margin: 0 0 var(--space-1) 0; line-height: 1.3; }
 .client-profile-main-container .profile-subheader .client-nif { font-size: var(--font-size-sm); color: var(--secondary-color); font-weight: var(--font-weight-normal); display: block; }
 
+
 /* --- Secções de Conteúdo --- */
 .client-profile-main-container .profile-section {
   background-color: var(--white-color);
-  border-radius: var(--border-radius-xl);
+  border-radius: var(--border-radius-lg); /* Raio menor */
   margin-bottom: var(--space-8);
-  box-shadow: none;
+  box-shadow: none; /* Sombra apenas na caixa principal .client-profile-page */
   border: var(--border-width) solid var(--border-color);
-  overflow: hidden;
+  overflow: hidden; /* Para que o conteúdo interno respeite o border-radius da secção */
   transition: var(--transition-base);
 }
-.client-profile-main-container .profile-section:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+.client-profile-main-container .profile-section:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md); /* Sombra no hover pode ser mantida ou removida/suavizada */
+}
+.client-profile-main-container .profile-section:last-child {
+   margin-bottom: 0; /* Remove margem da última secção para alinhar com o fundo da caixa */
+}
 .client-profile-main-container .section-header { display: flex; justify-content: space-between; align-items: center; padding: var(--space-4) var(--space-6); border-bottom: var(--border-width) solid var(--border-color); }
 .client-profile-main-container .section-header h2 { margin: 0; font-size: var(--font-size-lg); font-weight: var(--font-weight-semibold); color: var(--gray-800); display: flex; align-items: center; gap: var(--space-3); }
 .client-profile-main-container .section-content { padding: var(--space-6); }
 .client-profile-main-container .section-content.content-no-padding { padding: 0; }
 
-/* --- Informações Pessoais Específico (Lista) --- */
+/* Informações Pessoais Específico */
 .client-profile-main-container .personal-info-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: var(--space-5) var(--space-6); }
 .client-profile-main-container .info-item { padding: var(--space-2) 0; border-bottom: var(--border-width) dashed var(--gray-200); }
 .client-profile-main-container .info-item:last-child { border-bottom: none; }
@@ -126,54 +146,111 @@
 .client-profile-main-container .info-label svg { width: 14px; height: 14px; color: var(--gray-500); }
 .client-profile-main-container .info-value { font-size: var(--font-size-base); font-weight: var(--font-weight-medium); color: var(--gray-800); word-break: break-word; display: block; padding-left: calc(14px + var(--space-2)); }
 
-/* --- Tabelas de Dados --- */
+/* Tabelas de Dados */
 .client-profile-main-container .table-responsive-wrapper { overflow-x: auto; width: 100%; }
 .client-profile-main-container .data-table { width: 100%; border-collapse: collapse; font-size: var(--font-size-sm); }
 .client-profile-main-container .data-table th,
 .client-profile-main-container .data-table td { padding: var(--space-3) var(--space-5); text-align: left; vertical-align: middle; border-bottom: var(--border-width) solid var(--gray-200); white-space: nowrap; }
-.client-profile-main-container .data-table td:nth-child(2),
-.client-profile-main-container .data-table td:nth-child(3) { white-space: normal; }
+.client-profile-main-container .data-table td:nth-child(2), /* Para morada e contacto */
+.client-profile-main-container .data-table td:nth-child(3) { white-space: normal; } /* Para descrição contacto */
 .client-profile-main-container .data-table thead th {
   font-weight: var(--font-weight-semibold);
-  background-color: var(--white-color); /* Fundo branco consistente */
+  background-color: var(--white-color); /* Cor de fundo para o cabeçalho da tabela */
   color: var(--gray-700);
   border-bottom-width: 2px;
   border-bottom-color: var(--gray-300);
-  position: sticky; top: 0; z-index: 10;
+  position: sticky; top: 0; /* Sticky para o cabeçalho da tabela DENTRO do seu wrapper scrollable */
+  z-index: 10; /* Para sobrepor o conteúdo da tabela ao fazer scroll */
 }
 .client-profile-main-container .data-table tbody tr { transition: background-color var(--transition-fast); }
 .client-profile-main-container .data-table tbody tr:hover { background-color: var(--primary-color-light); }
 
-/* --- Forçar largura da tabela de impostos (se necessário) --- */
-.client-profile-main-container #impostos .table-responsive-wrapper > table { width: 100%; /* min-width: 800px; */ }
-.client-profile-main-container #impostos .section-content > table { width: 100%; display: block; overflow-x: auto; }
-
-/* --- Badges (Subtle) --- */
+/* Badges */
 .client-profile-main-container .badge { display: inline-block; padding: var(--space-1) var(--space-2); font-size: 0.75rem; font-weight: var(--font-weight-medium); line-height: 1; text-align: center; white-space: nowrap; vertical-align: baseline; border-radius: var(--border-radius-sm); }
 .client-profile-main-container .badge-subtle { color: var(--gray-700); background-color: var(--gray-200); border: 1px solid var(--gray-300); }
 
-/* --- Estados (Loading, Error, Empty) --- */
-.client-profile-main-container .centered-message { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 50vh; text-align: center; padding: var(--space-8); }
-.client-profile-main-container .message-card { background-color: var(--white-color); padding: var(--space-8); border-radius: var(--border-radius-lg); box-shadow: var(--shadow-md); max-width: 450px; width: 100%; margin: var(--space-8) auto; }
-.client-profile-main-container .message-card p { margin: var(--space-4) 0; }
-.client-profile-main-container .message-card .error-details { font-size: var(--font-size-sm); color: var(--gray-600); }
-.client-profile-main-container .message-card.error { border-top: 4px solid var(--danger-color); }
-.client-profile-main-container .message-card.error svg { color: var(--danger-color); }
-.client-profile-main-container .message-card.info { border-top: 4px solid var(--info-color); }
-.client-profile-main-container .message-card.info svg { color: var(--info-color); }
+
+/* --- MELHORIA 2: Estados Iniciais (Loading, Error, Empty) --- */
+.client-profile-state-container { /* Container para loading/erro/no-id iniciais */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh; /* Ocupa toda a altura da viewport */
+  background-color: var(--gray-100); /* Mesmo fundo cinza da página principal */
+  padding: var(--space-8); /* Espaçamento interno */
+}
+.client-profile-state-container .loading-content,
+.client-profile-state-container .error-content,
+.client-profile-state-container .no-id-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+.client-profile-state-container .loading-content p { /* Texto do loading inicial */
+  margin-top: var(--space-4);
+  font-size: var(--font-size-lg);
+  color: var(--gray-700);
+  font-weight: var(--font-weight-medium);
+}
+/* .message-card é usado para erro/no-id DENTRO do state-container */
+.client-profile-main-container .message-card, /* Aplicado também ao .message-card no profile-content */
+.client-profile-state-container .message-card {
+  background-color: var(--white-color);
+  padding: var(--space-8);
+  border-radius: var(--border-radius-lg); /* Consistente com secções internas */
+  box-shadow: var(--shadow-md);
+  max-width: 450px;
+  width: 100%;
+  /* margin: var(--space-8) auto; /* Removido, o pai (.state-container ou .profile-content) deve centrar se necessário */
+}
+.client-profile-main-container .message-card p, /* Estilo comum para parágrafos em message-card */
+.client-profile-state-container .message-card p {
+  margin: var(--space-4) 0;
+}
+.client-profile-main-container .message-card .error-details,
+.client-profile-state-container .message-card .error-details {
+  font-size: var(--font-size-sm); color: var(--gray-600);
+}
+.client-profile-main-container .message-card.error,
+.client-profile-state-container .message-card.error {
+  border-top: 4px solid var(--danger-color);
+}
+.client-profile-main-container .message-card.error svg,
+.client-profile-state-container .message-card.error svg {
+  color: var(--danger-color);
+}
+.client-profile-main-container .message-card.info,
+.client-profile-state-container .message-card.info {
+  border-top: 4px solid var(--info-color);
+}
+.client-profile-main-container .message-card.info svg,
+.client-profile-state-container .message-card.info svg {
+  color: var(--info-color);
+}
+
+
+/* Mensagens Inline (dentro do profile-content) */
 .client-profile-main-container .inline-message { padding: var(--space-3) var(--space-4); margin-bottom: var(--space-4); border-radius: var(--border-radius-md); display: flex; align-items: center; gap: var(--space-2); font-size: var(--font-size-sm); font-weight: var(--font-weight-medium); border: var(--border-width) solid; }
-.client-profile-main-container .inline-message.loading { background-color: var(--info-bg); border-color: var(--info-border); color: var(--info-color);}
+.client-profile-main-container .inline-message.loading { background-color: var(--info-bg); border-color: var(--info-border); color: var(--info-color); }
 .client-profile-main-container .inline-message.error { background-color: var(--danger-bg); border-color: var(--danger-border); color: var(--danger-color); }
 .client-profile-main-container .inline-message button { margin-left: auto; }
-.client-profile-main-container .empty-state { padding: var(--space-10) var(--space-5); text-align: center; min-height: 200px; display: flex; flex-direction: column; justify-content: center; align-items: center; border-top: var(--border-width) solid var(--gray-200); margin-top: -1px; }
+
+/* Empty State (dentro das secções) */
+.client-profile-main-container .empty-state { padding: var(--space-10) var(--space-5); text-align: center; min-height: 200px; display: flex; flex-direction: column; justify-content: center; align-items: center; border-top: var(--border-width) solid var(--gray-200); margin-top: -1px; /* Para sobrepor a borda da secção, se necessário */ }
 .client-profile-main-container #impostos .section-content > .empty-state:first-child,
 .client-profile-main-container #moradas .section-content > .empty-state:first-child,
 .client-profile-main-container #contactos .section-content > .empty-state:first-child,
-.client-profile-main-container #impostos .section-content > .table-responsive-wrapper + .empty-state { border-top: none; margin-top: 0; }
+.client-profile-main-container #impostos .section-content > .table-responsive-wrapper + .empty-state {
+  border-top: none; margin-top: 0;
+}
 .client-profile-main-container .empty-state-icon { color: var(--gray-400); margin-bottom: var(--space-4); }
 .client-profile-main-container .empty-state p { color: var(--gray-600); font-weight: var(--font-weight-medium); margin-bottom: var(--space-4); }
 
-/* --- Botões --- */
+
+/* --- Botões (sem alterações significativas, mantidos do original) --- */
 .client-profile-main-container .btn { display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2); padding: var(--space-2) var(--space-4); font-size: var(--font-size-sm); font-weight: var(--font-weight-medium); line-height: 1.5; text-align: center; text-decoration: none; vertical-align: middle; cursor: pointer; user-select: none; border: var(--border-width) solid transparent; border-radius: var(--border-radius-md); transition: var(--transition-fast); }
 .client-profile-main-container .btn:disabled { cursor: not-allowed; opacity: 0.65; }
 .client-profile-main-container .btn-sm { padding: var(--space-1) var(--space-2); font-size: 0.75rem; }
@@ -185,21 +262,24 @@
 .client-profile-main-container .btn-tertiary { color: var(--gray-700); background-color: transparent; border-color: transparent; }
 .client-profile-main-container .btn-tertiary:hover:not(:disabled) { background-color: var(--gray-100); color: var(--gray-900); }
 .client-profile-main-container .btn-danger { color: var(--white-color); background-color: var(--danger-color); border-color: var(--danger-color); }
-.client-profile-main-container .btn-danger:hover:not(:disabled) { background-color: #bb2d3b; border-color: #b02a37; }
+.client-profile-main-container .btn-danger:hover:not(:disabled) { background-color: var(--danger-color-dark); border-color: var(--danger-color-dark); }
 .client-profile-main-container .btn-icon { padding: var(--space-2); line-height: 1; }
 .client-profile-main-container .btn-icon svg { font-size: 1.1em; }
+.client-profile-main-container .btn-danger-subtle { color: var(--danger-color); background-color: transparent; border-color: transparent; }
+.client-profile-main-container .btn-danger-subtle:hover:not(:disabled) { background-color: var(--danger-bg); color: var(--danger-color-dark); }
 .client-profile-main-container .ml-2 { margin-left: var(--space-2); }
 .client-profile-main-container .mt-2 { margin-top: var(--space-2); }
 
-/* --- Responsividade --- */
-/* Remove a media query para 1400px, já que não há mais max-width fixo */
+/* --- Responsividade (mantida do original, verificar se necessita ajustes com o novo padding/layout) --- */
 @media (max-width: 992px) {
+  .client-profile-main-container { padding: var(--space-4); } /* Ajustar padding geral em telas menores */
   .client-profile-main-container .profile-header { padding: 0 var(--space-4); }
   .client-profile-main-container .profile-content { padding: var(--space-6) var(--space-4); }
   .client-profile-main-container .personal-info-list { grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); }
   .client-profile-main-container .profile-subheader { padding: var(--space-5); }
 }
 @media (max-width: 768px) {
+  .client-profile-main-container { padding: var(--space-3); } /* Ajustar padding geral */
   .client-profile-main-container .profile-header { padding: 0 var(--space-3); min-height: 50px; }
   .client-profile-main-container .header-main-content { gap: var(--space-2); min-height: 50px; padding: var(--space-1) 0; }
   .client-profile-main-container .profile-nav-links { order: 3; width: 100%; justify-content: space-around; padding: var(--space-1) 0; border-top: 1px solid var(--border-color); margin-top: var(--space-1); }
@@ -215,11 +295,12 @@
   .client-profile-main-container .section-header h2 { font-size: 1rem; }
   .client-profile-main-container .section-content { padding: var(--space-4); }
   .client-profile-main-container .personal-info-list { grid-template-columns: 1fr; gap: var(--space-3); }
-  .client-profile-main-container .info-value { padding-left: 0; }
+  .client-profile-main-container .info-value { padding-left: 0; } /* Ajuste para mobile */
   .client-profile-main-container .data-table th,
   .client-profile-main-container .data-table td { padding: var(--space-2) var(--space-3); }
 }
 @media (max-width: 480px) {
+    .client-profile-main-container { padding: var(--space-2); } /* Ajustar padding geral */
     .client-profile-main-container .profile-nav-links { gap: 0; justify-content: space-between;}
     .client-profile-main-container .profile-nav-link { padding: var(--space-2) var(--space-1); }
     .client-profile-main-container .data-table { font-size: 0.75rem; }
