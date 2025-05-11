@@ -2,7 +2,7 @@ import React, { useState, useEffect, ChangeEvent, useCallback } from 'react';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSearch, faSortUp, faSortDown, faInfoCircle, faSyncAlt, faTag, faUser, faCalendar, faEuroSign, faCheckCircle, faFileAlt, faChevronDown, faChevronUp } from '@fortawesome/free-solid-svg-icons';
-import '../pages/Taxes.css';
+import '../pages/Taxes.css'; // Ensure this CSS file has the .badge-anulada, .badge-emitida, etc. styles
 
 interface ObrigacaoFiscal {
     identificadorUnico: string;
@@ -17,11 +17,42 @@ interface ObrigacaoFiscal {
 interface TaxesTableProps {
     obrigações: ObrigacaoFiscal[] | null;
     loading: boolean;
-    error: string;
+    error: string; 
     onRefresh: () => void;
     lastUpdated: string | null;
     isRefreshing: boolean;
 }
+
+// Revised helper function to get badge class for modal and table
+const getBadgeClassForEstado = (estado?: string): string => {
+    if (!estado) return 'badge-secondary'; // Fallback for undefined/empty string
+
+    let currentEstado = estado;
+    if (estado === "-") {
+        currentEstado = "Pendente";
+    }
+
+    // Normalize to lowercase for .includes() checks to make them case-insensitive
+    const lowerEstado = currentEstado.toLowerCase();
+
+    // Exact matches for primary states (case-sensitive for the original value if needed)
+    if (currentEstado === "Pendente") return 'badge-pending';
+    if (currentEstado === "Pago" || currentEstado === "Paga") return 'badge-paid';
+    if (currentEstado === "Anulada") return 'badge-anulada';
+    if (currentEstado === "Emitida") return 'badge-emitida'; 
+    if (currentEstado === "Pendente de Emissão") return 'badge-pendente-emissao';
+
+    // Handle cases with .includes() for more flexibility, order can be important
+    if (lowerEstado.includes('pendente de emissão')) return 'badge-pendente-emissao';
+    if (lowerEstado.includes('emitida')) return 'badge-emitida'; 
+    if (lowerEstado.includes('anulada')) return 'badge-anulada';
+    if (lowerEstado.includes('paga')) return 'badge-paid'; 
+    
+    if (lowerEstado.includes('pendente')) return 'badge-pending';
+    
+    return 'badge-secondary'; 
+};
+
 
 const TaxesTable: React.FC<TaxesTableProps> = ({ obrigações, loading, error, onRefresh, lastUpdated, isRefreshing }) => {
     const [searchTerm, setSearchTerm] = useState('');
@@ -83,7 +114,6 @@ const TaxesTable: React.FC<TaxesTableProps> = ({ obrigações, loading, error, o
         return trimmedValue;
     };
 
-    // Fields to exclude from display
     const fieldsToExclude = [
         'Nif',
         'Nif Loc',
@@ -100,7 +130,8 @@ const TaxesTable: React.FC<TaxesTableProps> = ({ obrigações, loading, error, o
             const tiposUnicos = [...new Set(obrigações.map(o => o.tipo))];
             setTiposDeObrigacao(['Todos', ...tiposUnicos]);
 
-            const estadosUnicos = [...new Set(obrigações.map(o => o.estado))];
+            const estadosProcessadosParaFiltro = obrigações.map(o => o.estado === '-' ? 'Pendente' : o.estado);
+            const estadosUnicos = [...new Set(estadosProcessadosParaFiltro)];
             setEstadosDisponiveis(['Todos', ...estadosUnicos]);
         }
     }, [obrigações]);
@@ -127,6 +158,7 @@ const TaxesTable: React.FC<TaxesTableProps> = ({ obrigações, loading, error, o
     };
 
     const handleShowDetails = (obrigacao: ObrigacaoFiscal) => {
+        console.log("Selected Obrigacao Estado for Modal:", obrigacao.estado); 
         setSelectedObrigacao(obrigacao);
         setShowVehicleDetails(false);
     };
@@ -141,18 +173,29 @@ const TaxesTable: React.FC<TaxesTableProps> = ({ obrigações, loading, error, o
     };
 
     const filteredObrigações = (obrigações || []).filter((obrigacao) => {
-        const searchRegex = new RegExp(searchTerm, 'i');
         const typeMatch = filterType === 'Todos' || obrigacao.tipo === filterType;
+        
         const dateMatch =
             (!fromDate || new Date(obrigacao.dataLimite) >= new Date(fromDate)) &&
             (!toDate || new Date(obrigacao.dataLimite) <= new Date(toDate));
-        const estadoMatch = estadoFilter === 'Todos' || obrigacao.estado === estadoFilter;
-        const searchMatch = searchRegex.test(obrigacao.identificadorUnico) ||
-                            searchRegex.test(obrigacao.tipo) ||
-                            searchRegex.test(obrigacao.dataLimite) ||
-                            searchRegex.test(obrigacao.clientName) ||
-                            searchRegex.test(obrigacao.valor) ||
-                            searchRegex.test(obrigacao.estado);
+        
+        const estadoParaFiltro = obrigacao.estado === '-' ? 'Pendente' : obrigacao.estado;
+        const estadoMatch = estadoFilter === 'Todos' || estadoParaFiltro === estadoFilter;
+        
+        const normalize = (str: string) => str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+        const normalizedSearch = normalize(searchTerm);
+
+        const searchFields = [
+            obrigacao.identificadorUnico,
+            obrigacao.tipo,
+            obrigacao.dataLimite,
+            obrigacao.clientName,
+            String(obrigacao.valor),
+            estadoParaFiltro 
+        ];
+
+        const searchMatch = searchFields.some(field => normalize(String(field)).includes(normalizedSearch)); // Ensure field is string
+
         return typeMatch && searchMatch && dateMatch && estadoMatch;
     });
 
@@ -171,7 +214,7 @@ const TaxesTable: React.FC<TaxesTableProps> = ({ obrigações, loading, error, o
                 if (dateA && dateB) {
                     comparison = dateA.getTime() - dateB.getTime();
                 } else if (dateA) {
-                    comparison = 1;
+                    comparison = 1; 
                 } else if (dateB) {
                     comparison = -1;
                 }
@@ -184,7 +227,9 @@ const TaxesTable: React.FC<TaxesTableProps> = ({ obrigações, loading, error, o
                 }
                 break;
             case 'estado':
-                comparison = a.estado.localeCompare(b.estado);
+                const estadoA = a.estado === '-' ? 'Pendente' : a.estado;
+                const estadoB = b.estado === '-' ? 'Pendente' : b.estado;
+                comparison = estadoA.localeCompare(estadoB);
                 break;
             case 'clientName':
                 comparison = a.clientName.localeCompare(b.clientName);
@@ -197,38 +242,37 @@ const TaxesTable: React.FC<TaxesTableProps> = ({ obrigações, loading, error, o
         verticalAlign: 'middle',
     };
 
-    if (loading) {
+    if (loading && !obrigações) {
         return <div className="container mt-5 text-center">A carregar obrigações fiscais...</div>;
     }
 
     if (error) {
-        return <div className="container mt-5 text-center">Erro ao obter as obrigações fiscais.</div>;
+        return <div className="container mt-5 text-center alert alert-danger">Erro ao obter as obrigações fiscais: {error}</div>;
     }
 
     return (
         <div className="container-fluid mt-5 animate-fade-in">
-            <div className="d-flex justify-content-between align-items-center" onClick={onRefresh}>
+            <div className="d-flex justify-content-between align-items-center mb-3">
                 {lastUpdated && (
-                    <p className="text-muted mr-3">
+                    <p className="text-muted mb-0" onClick={onRefresh} style={{ cursor: 'pointer' }}>
                         <FontAwesomeIcon
                             icon={faSyncAlt}
                             className="mr-2 me-2"
-                            style={{ cursor: 'pointer' }}
                             spin={isRefreshing}
                         />
                         Última atualização: {lastUpdated}
                     </p>
                 )}
-                
+                 {!lastUpdated && !loading && <p className="text-muted mb-0">Clique no ícone para atualizar.</p>}
             </div>
 
             <div className="d-flex justify-content-between align-items-center mb-3">
-                <div className="d-flex gap-2 align-items-center">
+                <div className="d-flex gap-2 align-items-center flex-wrap">
                     <div className="d-flex gap-2 align-items-center">
                         <label htmlFor="fromDate" className="form-label m-0 text-secondary small">De:</label>
                         <input
                             type="date"
-                            className="form-control form-control-sm"
+                            className="form-control form-control-sm date-picker-input"
                             value={fromDate}
                             onChange={(e) => setFromDate(e.target.value)}
                             id="fromDate"
@@ -238,7 +282,7 @@ const TaxesTable: React.FC<TaxesTableProps> = ({ obrigações, loading, error, o
                         <label htmlFor="toDate" className="form-label m-0 text-secondary small">Até:</label>
                         <input
                             type="date"
-                            className="form-control form-control-sm"
+                            className="form-control form-control-sm date-picker-input"
                             value={toDate}
                             onChange={(e) => setToDate(e.target.value)}
                             id="toDate"
@@ -250,18 +294,18 @@ const TaxesTable: React.FC<TaxesTableProps> = ({ obrigações, loading, error, o
                         onChange={handleFilterEstado}
                     >
                         <option value="Todos">Estados</option>
-                        {estadosDisponiveis.slice(1).map(estado => (
+                        {estadosDisponiveis.filter(e => e !== "Todos").map(estado => (
                             <option key={estado} value={estado}>{estado}</option>
                         ))}
                     </select>
                     <select
-                        className="form-select form-select-sm rounded-md border-gray-300 text-gray-700 shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+                        className="form-select form-select-sm"
                         id="filterType"
                         value={filterType}
                         onChange={handleFilterType}
                     >
                         <option value="Todos">Tipo</option>
-                        {tiposDeObrigacao.slice(1).map(tipo => (
+                        {tiposDeObrigacao.filter(t => t !== "Todos").map(tipo => (
                             <option key={tipo} value={tipo}>{tipo}</option>
                         ))}
                     </select>
@@ -269,7 +313,7 @@ const TaxesTable: React.FC<TaxesTableProps> = ({ obrigações, loading, error, o
 
                 <div className="d-flex justify-content-end">
                     <div className="position-relative d-flex align-items-center search-bar-container">
-                        <div className="position-absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none search-icon">
+                        <div className="search-icon">
                             <FontAwesomeIcon icon={faSearch} className="text-gray-400" />
                         </div>
                         <input
@@ -311,53 +355,52 @@ const TaxesTable: React.FC<TaxesTableProps> = ({ obrigações, loading, error, o
                             </tr>
                         </thead>
                         <tbody>
-                            {loading ? (
+                            {loading && sortedObrigações.length === 0 ? (
                                 <tr><td colSpan={7} className="text-center py-4 text-muted">A carregar dados...</td></tr>
-                            ) : error ? (
-                                <tr><td colSpan={7} className="text-center py-4 text-danger">Erro ao obter os dados.</td></tr>
-                            ) : (obrigações || []).length === 0 ? (
+                            ) : sortedObrigações.length === 0 ? (
                                 <tr>
                                     <td colSpan={7} className="text-center py-4 text-muted">Nenhuma obrigação fiscal encontrada.</td>
                                 </tr>
                             ) : (
-                                sortedObrigações.map((obrigacao) => (
-                                    <tr key={obrigacao.identificadorUnico}>
-                                        <td style={cellStyle} className="text-secondary">{obrigacao.identificadorUnico}</td>
-                                        <td style={cellStyle} className="text-secondary">{obrigacao.tipo}</td>
-                                        <td style={cellStyle} className="text-secondary">{obrigacao.dataLimite}</td>
-                                        <td style={cellStyle} className="text-secondary">{obrigacao.clientName}</td>
-                                        <td style={cellStyle} className="text-end text-secondary">{obrigacao.valor}</td>
-                                        <td style={cellStyle} className="text-center">
-                                            <span
-                                                className={`badge rounded-pill ${
-                                                    obrigacao.estado === 'Pendente' ? 'bg-warning text-dark' :
-                                                    obrigacao.estado === 'Pago' ? 'bg-success' :
-                                                    'bg-danger'
-                                                }`}
-                                            >
-                                                {obrigacao.estado}
-                                            </span>
-                                        </td>
-                                        <td style={cellStyle} className="text-center">
-                                            <button
-                                                className="btn btn-sm btn-outline-primary rounded-pill shadow-sm"
-                                                onClick={() => handleShowDetails(obrigacao)}
-                                                data-bs-toggle="modal"
-                                                data-bs-target="#taxes-details-modal"
-                                            >
-                                                <FontAwesomeIcon icon={faInfoCircle} className="me-1" /> Ver Detalhes
-                                            </button>
-                                        </td>
-                                    </tr>
-                                ))
+                                sortedObrigações.map((obrigacao) => {
+                                    const estadoTextParaExibir = obrigacao.estado === '-' ? 'Pendente' : obrigacao.estado;
+                                    const classeDoBadge = getBadgeClassForEstado(obrigacao.estado); // Use the unified function
+
+                                    return (
+                                        <tr key={obrigacao.identificadorUnico}>
+                                            <td style={cellStyle} className="text-secondary">{obrigacao.identificadorUnico}</td>
+                                            <td style={cellStyle} className="text-secondary">{obrigacao.tipo}</td>
+                                            <td style={cellStyle} className="text-secondary">{obrigacao.dataLimite}</td>
+                                            <td style={cellStyle} className="text-secondary">{obrigacao.clientName}</td>
+                                            <td style={cellStyle} className="text-end text-secondary">{obrigacao.valor}</td>
+                                            <td style={cellStyle} className="text-center">
+                                                {/* Apply modern-badge for consistent styling with modal if desired, or just badge + color class */}
+                                                <span className={`badge modern-badge ${classeDoBadge}`}>
+                                                    {estadoTextParaExibir}
+                                                </span>
+                                            </td>
+                                            <td style={cellStyle} className="text-center">
+                                                <button
+                                                    className="btn btn-sm btn-outline-primary rounded-pill shadow-sm"
+                                                    onClick={() => handleShowDetails(obrigacao)}
+                                                    data-bs-toggle="modal"
+                                                    data-bs-target="#taxes-details-modal"
+                                                >
+                                                    <FontAwesomeIcon icon={faInfoCircle} className="me-1" /> Ver Detalhes
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    );
+                                })
                             )}
                         </tbody>
                     </table>
                 </div>
             </div>
 
+            {/* Modal de Detalhes da Obrigação Fiscal */}
             <div className="modal fade" id="taxes-details-modal" tabIndex={-1} aria-labelledby="taxes-details-modal-label" aria-hidden="true">
-                <div className="modal-dialog modal-lg modal-dialog-centered">
+                <div className="modal-dialog modal-xl modal-dialog-centered">
                     <div className="modal-content" id="taxes-modal-content">
                         <div className="modal-header" id="taxes-modal-header">
                             <h5 className="modal-title" id="taxes-details-modal-label">
@@ -412,7 +455,7 @@ const TaxesTable: React.FC<TaxesTableProps> = ({ obrigações, loading, error, o
                                                                         !fieldsToExclude.includes(formatFieldName(key)) &&
                                                                         value != null && 
                                                                         String(value).trim() !== '' && 
-                                                                        String(value) !== 'null' && 
+                                                                        String(value).toLowerCase() !== 'null' && 
                                                                         String(value) !== '-'
                                                                 );
                                                                 if (validEntries.length === 0) {
@@ -443,7 +486,6 @@ const TaxesTable: React.FC<TaxesTableProps> = ({ obrigações, loading, error, o
                                                                 return (
                                                                     <div className="detail-row text-danger" id="taxes-detail-row-vehicle-error">
                                                                         <FontAwesomeIcon icon={faFileAlt} className="detail-icon me-2" />
-                                                                        <span className="detail-label">Erro:</span>
                                                                         <span className="detail-value">Não foi possível carregar os detalhes do veículo.</span>
                                                                     </div>
                                                                 );
@@ -470,43 +512,43 @@ const TaxesTable: React.FC<TaxesTableProps> = ({ obrigações, loading, error, o
                                             <div className="detail-row" id="taxes-detail-row-estado">
                                                 <FontAwesomeIcon icon={faCheckCircle} className="detail-icon" />
                                                 <span className="detail-label">Estado:</span>
-                                                <span className={`badge modern-badge ${
-                                                    selectedObrigacao.estado === 'Pendente' ? 'badge-pending' :
-                                                    selectedObrigacao.estado === 'Pago' ? 'badge-paid' :
-                                                    'badge-canceled'
-                                                }`}>
-                                                    {selectedObrigacao.estado}
+                                                <span className={`badge modern-badge ${getBadgeClassForEstado(selectedObrigacao.estado)}`}>
+                                                    {selectedObrigacao.estado === '-' ? 'Pendente' : selectedObrigacao.estado}
                                                 </span>
                                             </div>
                                             {(() => {
                                                 try {
                                                     const jsonData = JSON.parse(selectedObrigacao.json);
-                                                    const validEntries = Object.entries(jsonData).filter(
-                                                        ([key, value]) =>
-                                                            key !== 'Situação' &&
-                                                            key !== 'Nº Nota Cob.' &&
-                                                            key !== 'Valor' &&
-                                                            key !== 'Data Lim. Pag.' &&
-                                                            key !== 'Matrícula' &&
-                                                            key !== 'Situação da Nota' &&
-                                                            key !== 'Data Limite de Pagamento' &&
-                                                            key !== 'detalhes_veiculo' &&
+                                                    const generalEntries = Object.entries(jsonData).filter(
+                                                        ([key]) =>
+                                                            key !== 'detalhes_veiculo' && 
                                                             !fieldsToExclude.includes(key) &&
                                                             !fieldsToExclude.includes(formatFieldName(key)) &&
-                                                            value != null &&
-                                                            String(value).trim() !== '' &&
-                                                            String(value) !== 'null' &&
-                                                            String(value) !== '-'
+                                                            key.toLowerCase() !== 'tipo' && 
+                                                            key.toLowerCase() !== 'identificadorunico' &&
+                                                            key.toLowerCase() !== 'datalimite' && 
+                                                            key.toLowerCase() !== 'clientname' &&
+                                                            key.toLowerCase() !== 'valor' && 
+                                                            key.toLowerCase() !== 'estado' &&
+                                                            key.toLowerCase() !== 'situação da nota' && 
+                                                            key.toLowerCase() !== 'matrícula' && 
+                                                            key.toLowerCase() !== 'nº nota cob.' && 
+                                                            key.toLowerCase() !== 'valor base' && 
+                                                            key.toLowerCase() !== 'data limite de pagamento' && 
+                                                            jsonData[key] != null &&
+                                                            String(jsonData[key]).trim() !== '' &&
+                                                            String(jsonData[key]).toLowerCase() !== 'null' &&
+                                                            String(jsonData[key]) !== '-'
                                                     );
-                                                    if (validEntries.length === 0) {
-                                                        return null;
+                                                    if (generalEntries.length === 0 && !jsonData.detalhes_veiculo) {
+                                                         return null; 
                                                     }
-                                                    return validEntries.map(([key, value]) => {
+                                                    return generalEntries.map(([key, value]) => {
                                                         const safeKey = key.toLowerCase().replace(/[^a-z0-9]/g, '-');
                                                         const formattedKey = formatFieldName(key);
                                                         const formattedValue = formatValue(value);
                                                         return (
-                                                            <div className="detail-row" key={safeKey} id={`taxes-detail-row-${safeKey}`}>
+                                                            <div className="detail-row" key={`general-${safeKey}`} id={`taxes-detail-row-${safeKey}`}>
                                                                 <FontAwesomeIcon icon={faFileAlt} className="detail-icon" />
                                                                 <span className="detail-label">{formattedKey}:</span>
                                                                 <span className="detail-value">{formattedValue}</span>
@@ -515,9 +557,8 @@ const TaxesTable: React.FC<TaxesTableProps> = ({ obrigações, loading, error, o
                                                     });
                                                 } catch (e) {
                                                     return (
-                                                        <div className="detail-row text-danger" id="taxes-detail-row-error">
+                                                        <div className="detail-row text-danger" id="taxes-detail-row-json-error">
                                                             <FontAwesomeIcon icon={faFileAlt} className="detail-icon" />
-                                                            <span className="detail-label">Erro:</span>
                                                             <span className="detail-value">Não foi possível carregar os detalhes adicionais.</span>
                                                         </div>
                                                     );
