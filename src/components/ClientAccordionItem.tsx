@@ -1,5 +1,6 @@
 import React from 'react';
-import UrgentTaxTable from './UrgentTaxTable';
+import UrgentTaxTable from './UrgentTaxTable'; // Assuming this component exists
+import { useNavigate } from 'react-router-dom'; // Import useNavigate
 
 interface Tax {
   taxId: number;
@@ -27,21 +28,27 @@ interface Props {
 
 const ClientAccordionItem: React.FC<Props> = ({ client, index, warningDays, urgentDays }) => {
   const { clientId, clientName, taxes } = client;
+  const navigate = useNavigate(); // Initialize navigate
 
-  // Determinar o estado com base nos dias restantes
+  // Determine the state based on the remaining days
   const daysLeft = taxes[0]?.daysLeft;
   let status: 'urgent' | 'warning' | 'normal' = 'normal';
-  let icon = '🟢'; // Ícone para estado normal
+  let icon = '🟢'; // Icon for normal state
 
   if (daysLeft !== undefined) {
     if (daysLeft <= urgentDays) {
       status = 'urgent';
-      icon = '🚨'; // Ícone para urgente
+      icon = '🚨'; // Icon for urgent
     } else if (daysLeft <= warningDays) {
       status = 'warning';
-      icon = '⚠️'; // Ícone para aviso
+      icon = '⚠️'; // Icon for warning
     }
   }
+
+  // Function to handle click on client name
+  const handleClientNameClick = () => {
+    navigate(`/clients/${clientId}`);
+  };
 
   return (
     <div className="accordion-item" key={clientId}>
@@ -57,7 +64,16 @@ const ClientAccordionItem: React.FC<Props> = ({ client, index, warningDays, urge
           <div className="d-flex align-items-center w-100 justify-content-between">
             <div className="d-flex align-items-center">
               <span className="fs-4">{icon}</span>
-              <span className="ms-4 fs-3">{clientName}</span>
+              {/* Apply hover effect and click handler to clientName */}
+              <span
+                className="ms-4 fs-3 hover:underline cursor-pointer" // Added Tailwind classes for underline on hover and cursor
+                onClick={handleClientNameClick} // Added onClick handler
+                style={{ textDecoration: 'none' }} // Ensure no default underline
+                onMouseEnter={(e) => e.currentTarget.style.textDecoration = 'underline'}
+                onMouseLeave={(e) => e.currentTarget.style.textDecoration = 'none'}
+              >
+                {clientName}
+              </span>
             </div>
             <span className="text-muted me-5">
               {daysLeft !== undefined ? `${daysLeft} dias até expirar` : 'Sem prazo'}
@@ -69,10 +85,15 @@ const ClientAccordionItem: React.FC<Props> = ({ client, index, warningDays, urge
         id={`collapse${index}`}
         className={`accordion-collapse collapse ${index === 0 ? 'show' : ''}`}
         aria-labelledby={`heading${index}`}
-        data-bs-parent="#mainAccordion"
+        data-bs-parent="#mainAccordion" // Assuming your main accordion has this ID
       >
         <div className="accordion-body">
-          <UrgentTaxTable taxes={taxes} />
+          {/* Ensure UrgentTaxTable component is correctly imported and used */}
+          {taxes && taxes.length > 0 ? (
+            <UrgentTaxTable taxes={taxes} />
+          ) : (
+            <p>Não existem impostos para este cliente.</p>
+          )}
         </div>
       </div>
     </div>
