@@ -1,7 +1,7 @@
 import React, { useState, useEffect, ChangeEvent, useCallback } from 'react';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faSearch, faSortUp, faSortDown, faSyncAlt, faInfoCircle, faUser, faLock, faExclamationCircle, faCheckCircle, faTrashAlt } from '@fortawesome/free-solid-svg-icons';
+import { faSortUp, faSortDown, faSyncAlt, faInfoCircle, faUser, faLock, faExclamationCircle, faCheckCircle } from '@fortawesome/free-solid-svg-icons'; // Removido faTrashAlt
 import './Taxes.css';
 import useApi from '../hooks/useApi';
 import axios from 'axios';
@@ -34,12 +34,12 @@ const Clients = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState('');
-  const [deleteSuccessMessage, setDeleteSuccessMessage] = useState('');
-  const [deleteError, setDeleteError] = useState<string | null>(null);
-  // Novos estados para o modal de confirmação
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [clientIdToDelete, setClientIdToDelete] = useState<number | null>(null);
+  const [successMessage, setSuccessMessage] = useState(''); // Mantido para adicionar cliente
+  // Estados removidos relacionados com a eliminação:
+  // const [deleteSuccessMessage, setDeleteSuccessMessage] = useState('');
+  // const [deleteError, setDeleteError] = useState<string | null>(null);
+  // const [showDeleteModal, setShowDeleteModal] = useState(false);
+  // const [clientIdToDelete, setClientIdToDelete] = useState<number | null>(null);
   const [selectedClientId, setSelectedClientId] = useState<number | null>(null);
 
   const nifMaxLength = 9;
@@ -50,10 +50,11 @@ const Clients = () => {
   const handleOpenClientDetails = (id: number) => {
     setSelectedClientId(id);
   };
-  
-  const handleCloseClientDetails = () => {
-    setSelectedClientId(null);
-  };
+
+  // handleCloseClientDetails não estava a ser usado, mas pode ser útil se implementares um modal de detalhes
+  // const handleCloseClientDetails = () => {
+  // setSelectedClientId(null);
+  // };
 
   const handleRefresh = useCallback(() => {
     setIsRefreshing(true);
@@ -82,28 +83,32 @@ const Clients = () => {
   };
 
   const filteredClients = (clients || []).filter((client) => {
-    const normalize = (str: string) =>
-      str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-  
+    const normalize = (str: string | undefined | null) =>
+      str ? str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase() : '';
+
     const normalizedSearch = normalize(searchTerm);
-  
+
     return (
       normalize(client.name).includes(normalizedSearch) ||
       normalize(client.nif.toString()).includes(normalizedSearch) ||
-      normalize(client.nationality).includes(normalizedSearch)
+      normalize(client.nationality).includes(normalizedSearch) ||
+      normalize(client.associatedColaborator).includes(normalizedSearch)
     );
   });
 
   const sortedClients = [...filteredClients].sort((a, b) => {
     let comparison = 0;
-    if (sortBy === 'name') {
-      comparison = a.name.localeCompare(b.name);
+    const valA = a[sortBy];
+    const valB = b[sortBy];
+
+    if (sortBy === 'name' || sortBy === 'gender' || sortBy === 'associatedColaborator') {
+        comparison = String(valA).localeCompare(String(valB));
     } else if (sortBy === 'nif') {
-      comparison = a.nif - b.nif;
-    } else if (sortBy === 'gender') {
-      comparison = a.gender.localeCompare(b.gender);
+        comparison = Number(valA) - Number(valB);
     } else if (sortBy === 'birthDate') {
-      comparison = new Date(a.birthDate).getTime() - new Date(b.birthDate).getTime();
+        const dateA = new Date(String(valA)).getTime();
+        const dateB = new Date(String(valB)).getTime();
+        comparison = (isNaN(dateA) ? 0 : dateA) - (isNaN(dateB) ? 0 : dateB);
     }
     return sortDirection === 'asc' ? comparison : comparison * -1;
   });
@@ -133,7 +138,7 @@ const Clients = () => {
   const handleAddClient = async () => {
     setIsLoading(true);
     setError(null);
-    setSuccessMessage('');
+    setSuccessMessage(''); // Limpa mensagens de sucesso anteriores
 
     try {
       const apiUrl = `${BASE_URL}atmate-gateway/clients/create`;
@@ -164,7 +169,7 @@ const Clients = () => {
       });
 
       setIsLoading(false);
-      setDeleteSuccessMessage('Cliente adicionado com sucesso!');
+      setSuccessMessage('Cliente adicionado com sucesso!'); // Usar successMessage para feedback de adição
       setNif('');
       setPassword('');
       setConfirmPassword('');
@@ -173,43 +178,14 @@ const Clients = () => {
       console.log('Cliente adicionado:', response.data);
     } catch (err: any) {
       setIsLoading(false);
-      setError('Ocorreu um erro ao comunicar com o servidor: ' + err.message);
+      setError('Ocorreu um erro ao comunicar com o servidor: ' + (err.response?.data?.message || err.message));
     }
   };
 
-  const handleDeleteClient = async () => {
-    if (!clientIdToDelete) return;
-
-    try {
-      const apiUrl = `${BASE_URL}atmate-gateway/clients/${clientIdToDelete}`;
-      await axios.delete(apiUrl, {
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      setDeleteSuccessMessage('Cliente eliminado com sucesso!');
-      setDeleteError(null);
-      setShowDeleteModal(false);
-      setClientIdToDelete(null);
-      handleRefresh();
-    } catch (err: any) {
-      setDeleteError('Erro ao eliminar o cliente: ' + err.message);
-      setDeleteSuccessMessage('');
-      setShowDeleteModal(false);
-      setClientIdToDelete(null);
-    }
-  };
-
-  const handleOpenDeleteModal = (clientId: number) => {
-    setClientIdToDelete(clientId);
-    setShowDeleteModal(true);
-  };
-
-  const handleCloseDeleteModal = () => {
-    setShowDeleteModal(false);
-    setClientIdToDelete(null);
-  };
+  // Funções removidas relacionadas com a eliminação:
+  // const handleDeleteClient = async () => { ... };
+  // const handleOpenDeleteModal = (clientId: number) => { ... };
+  // const handleCloseDeleteModal = () => { ... };
 
   const handleCloseModal = () => {
     setShowModal(false);
@@ -217,7 +193,7 @@ const Clients = () => {
     setPassword('');
     setConfirmPassword('');
     setError(null);
-    setSuccessMessage('');
+    setSuccessMessage(''); // Limpa mensagem de sucesso ao fechar o modal
   };
 
   const cellStyle = {
@@ -227,13 +203,12 @@ const Clients = () => {
   return (
     <div className="container-fluid mt-5 animate-fade-in">
       <div className="header-row mb-3">
-        <div className="left-column" onClick={handleRefresh}>
+        <div className="left-column" onClick={handleRefresh} style={{ cursor: 'pointer' }}>
           {lastUpdated ? (
             <p className="text-muted mb-0">
               <FontAwesomeIcon
                 icon={faSyncAlt}
                 className="mr-2 me-2"
-                style={{ cursor: 'pointer' }}
                 spin={isRefreshing}
               />
               Última atualização: {lastUpdated}
@@ -254,19 +229,21 @@ const Clients = () => {
         </div>
       </div>
 
-      {deleteSuccessMessage && (
-        <div className="alert alert-success d-flex align-items-center mb-3">
+      {/* Alertas para adicionar cliente (usando successMessage e error já existentes no modal) */}
+      {/* Se quiseres que as mensagens de sucesso da adição apareçam aqui em vez de dentro do modal, podes ajustar */}
+      {/* Exemplo de como ficaria o alerta de sucesso de adição fora do modal: */}
+      {successMessage && !showModal && ( // Mostra apenas se o modal estiver fechado
+        <div className="alert alert-success d-flex align-items-center mb-3 alert-dismissible fade show" role="alert">
           <FontAwesomeIcon icon={faCheckCircle} className="me-2" />
-          {deleteSuccessMessage}
+          {successMessage}
+          <button type="button" className="btn-close" onClick={() => setSuccessMessage('')} aria-label="Close"></button>
         </div>
       )}
 
-      {deleteError && (
-        <div className="alert alert-danger d-flex align-items-center mb-3">
-          <FontAwesomeIcon icon={faExclamationCircle} className="me-2" />
-          {deleteError}
-        </div>
-      )}
+
+      {/* JSX removido: Alertas de deleteSuccessMessage e deleteError */}
+      {/* {deleteSuccessMessage && ( ... )} */}
+      {/* {deleteError && ( ... )} */}
 
       {/* Modal estilizado para adicionar cliente */}
       <div className={`modal fade ${showModal ? 'show d-block' : ''}`} tabIndex={-1} style={{ backgroundColor: 'rgba(0, 0, 0, 0.6)' }}>
@@ -332,12 +309,13 @@ const Clients = () => {
                   {error}
                 </div>
               )}
-              {successMessage && (
+              {/* A mensagem de sucesso para adição será mostrada fora do modal ou podes optar por mostrá-la aqui */}
+              {/* {successMessage && (
                 <div className="alert alert-success d-flex align-items-center mt-3">
                   <FontAwesomeIcon icon={faCheckCircle} className="me-2" />
                   {successMessage}
                 </div>
-              )}
+              )} */}
             </div>
             <div className="modal-footer">
               <button
@@ -353,46 +331,14 @@ const Clients = () => {
         </div>
       </div>
 
-      {/* Modal de confirmação de eliminação */}
-      <div className={`modal fade ${showDeleteModal ? 'show d-block' : ''}`} tabIndex={-1} style={{ backgroundColor: 'rgba(0, 0, 0, 0.6)' }}>
-        <div className="modal-dialog modal-dialog-centered custom-modal">
-          <div className="modal-content">
-            <div className="modal-header">
-              <h5 className="modal-title modal-title-colored">Confirmar Eliminação</h5>
-              <button
-                type="button"
-                className="btn-close"
-                onClick={handleCloseDeleteModal}
-              ></button>
-            </div>
-            <div className="modal-body">
-              <p>Tem certeza que deseja eliminar este cliente? Esta ação não pode ser desfeita.</p>
-            </div>
-            <div className="modal-footer">
-              <button
-                type="button"
-                className="btn btn-secondary"
-                onClick={handleCloseDeleteModal}
-              >
-                Cancelar
-              </button>
-              <button
-                type="button"
-                className="btn btn-danger"
-                onClick={handleDeleteClient}
-              >
-                Eliminar
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
+      {/* JSX removido: Modal de confirmação de eliminação */}
+      {/* <div className={`modal fade ${showDeleteModal ? 'show d-block' : ''}`} ... > ... </div> */}
 
       <div className="mb-4 d-flex gap-2">
         <input
           type="text"
           className="form-control form-control-sm rounded-md border-gray-300 pl-10 text-gray-700 shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
-          placeholder="Pesquisar por nome, NIF ou nacionalidade..."
+          placeholder="Pesquisar por nome, NIF, nacionalidade ou colaborador..."
           value={searchTerm}
           onChange={handleSearch}
         />
@@ -409,7 +355,9 @@ const Clients = () => {
                 <th style={cellStyle} onClick={() => handleSort('nif')} className="cursor-pointer text-secondary">
                   NIF <FontAwesomeIcon icon={sortBy === 'nif' ? (sortDirection === 'asc' ? faSortUp : faSortDown) : faSortDown} size="sm" />
                 </th>
-                <th style={cellStyle} className="text-secondary">Colaborador</th>
+                <th style={cellStyle} onClick={() => handleSort('associatedColaborator')} className="cursor-pointer text-secondary">
+                  Colaborador <FontAwesomeIcon icon={sortBy === 'associatedColaborator' ? (sortDirection === 'asc' ? faSortUp : faSortDown) : faSortDown} size="sm" />
+                </th>
                 <th style={cellStyle} onClick={() => handleSort('gender')} className="cursor-pointer text-secondary">
                   Género <FontAwesomeIcon icon={sortBy === 'gender' ? (sortDirection === 'asc' ? faSortUp : faSortDown) : faSortDown} size="sm" />
                 </th>
@@ -432,7 +380,7 @@ const Clients = () => {
                   <tr key={client.id}>
                     <td style={cellStyle} className="text-secondary">{client.name}</td>
                     <td style={cellStyle} className="text-secondary">{client.nif}</td>
-                    <td style={cellStyle} className="text-secondary">{client.associatedColaborator}</td>
+                    <td style={cellStyle} className="text-secondary">{client.associatedColaborator || 'N/A'}</td>
                     <td style={cellStyle} className="text-secondary">{client.gender}</td>
                     <td style={cellStyle} className="text-secondary">{client.nationality}</td>
                     <td style={cellStyle} className="text-secondary">{client.birthDate}</td>
@@ -442,12 +390,8 @@ const Clients = () => {
                           onClick={() => handleClientClick(client.id)}>
                           <FontAwesomeIcon icon={faInfoCircle} className="me-1" /> Ver Detalhes
                         </button>
-                        <button
-                          className="btn btn-sm btn-outline-danger rounded-pill shadow-sm"
-                          onClick={() => handleOpenDeleteModal(client.id)}
-                        >
-                          <FontAwesomeIcon icon={faTrashAlt} className="me-1" /> Eliminar
-                        </button>
+                        {/* Botão de eliminar removido daqui */}
+                        {/* <button ... onClick={() => handleOpenDeleteModal(client.id)} ... > Eliminar </button> */}
                       </div>
                     </td>
                   </tr>
@@ -458,7 +402,6 @@ const Clients = () => {
         </div>
       </div>
     </div>
-    
   );
 };
 
