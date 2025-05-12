@@ -398,3 +398,132 @@
 .toggle-button.inactive { background-color: #fee2e2; border-color: #fca5a5; color: #991b1b; }
 .toggle-button.active:hover { background-color: #a7f3d0; border-color: #34d399; }
 .toggle-button.inactive:hover { background-color: #fecaca; border-color: #f87171; }
+
+/* Estilo para o novo botão na tabela */
+.action-button.view-messages {
+  color: #3498db; /* Azul, por exemplo */
+}
+.action-button.view-messages:hover {
+  color: #2980b9;
+}
+.action-button.view-messages:disabled {
+  color: #bdc3c7; /* Cor para desabilitado */
+  cursor: not-allowed;
+}
+
+
+/* Estilos para o Modal de Mensagens */
+.modal-content.large {
+  max-width: 90%; /* Ou um valor fixo como 1000px */
+  width: 800px; /* Exemplo */
+}
+
+.messages-modal-body {
+  max-height: 60vh; /* Limita a altura do corpo do modal */
+  overflow-y: auto;  /* Adiciona scroll se necessário */
+  padding: 10px 20px; /* Ajustar padding */
+}
+
+.messages-history-table-container {
+   width: 100%;
+   overflow-x: auto; /* Scroll horizontal se a tabela for muito larga */
+}
+
+.messages-history-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 15px;
+  font-size: 0.9em;
+}
+
+.messages-history-table th,
+.messages-history-table td {
+  border: 1px solid #ddd;
+  padding: 8px 10px;
+  text-align: left;
+  vertical-align: top; /* Alinha conteúdo no topo */
+}
+
+.messages-history-table th {
+  background-color: #f2f2f2;
+  font-weight: bold;
+  white-space: nowrap; /* Evita quebra de linha nos cabeçalhos */
+}
+
+.messages-history-table tr:nth-child(even) {
+  background-color: #f9f9f9;
+}
+
+.messages-history-table td[data-label="Mensagem"] {
+  max-width: 300px; /* Limita largura da coluna mensagem */
+  word-break: break-word; /* Quebra palavras longas */
+   white-space: pre-wrap; /* Preserva espaços e quebras de linha da mensagem original */
+}
+
+/* Estilos para o status da mensagem (exemplo) */
+.status-message {
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.85em;
+  text-transform: uppercase;
+  font-weight: bold;
+  color: white;
+}
+
+.status-message.enviada { background-color: #2ecc71; } /* Verde */
+.status-message.pendente { background-color: #f39c12; } /* Laranja */
+.status-message.falhou { background-color: #e74c3c; } /* Vermelho */
+.status-message.lida { background-color: #3498db; } /* Azul (se tiver esse status) */
+/* Adicione outros status conforme necessário */
+
+
+/* Responsividade para a tabela do modal (opcional) */
+@media screen and (max-width: 768px) {
+  .messages-history-table thead {
+      display: none; /* Oculta cabeçalho em telas pequenas */
+  }
+  .messages-history-table, .messages-history-table tbody, .messages-history-table tr, .messages-history-table td {
+      display: block;
+      width: 100%;
+  }
+  .messages-history-table tr {
+      margin-bottom: 15px;
+      border: 1px solid #ddd;
+      padding: 10px;
+  }
+  .messages-history-table td {
+      text-align: right; /* Alinha conteúdo à direita */
+      padding-left: 50%; /* Cria espaço para o label */
+      position: relative;
+      border: none; /* Remove borda individual */
+       min-height: 25px; /* Garante altura mínima */
+  }
+  .messages-history-table td::before {
+      content: attr(data-label); /* Usa o data-label como pseudo-elemento */
+      position: absolute;
+      left: 10px; /* Posição do label */
+      width: 45%; /* Largura do label */
+      padding-right: 10px;
+      font-weight: bold;
+      text-align: left; /* Alinha o label à esquerda */
+      white-space: nowrap;
+  }
+   .messages-history-table td[data-label="Mensagem"] {
+      max-width: none; /* Remove limitação em telas pequenas */
+      text-align: left; /* Alinha a mensagem à esquerda */
+      padding-left: 10px; /* Ajusta padding */
+  }
+  .messages-history-table td[data-label="Mensagem"]::before {
+      text-align: left; /* Garante alinhamento */
+      position: static; /* Retorna ao fluxo normal */
+      display: block; /* Ocupa linha inteira */
+      width: auto;
+      margin-bottom: 5px;
+  }
+}
+
+.modal-footer {
+  padding: 15px 20px;
+  text-align: right;
+  border-top: 1px solid #eee;
+}
