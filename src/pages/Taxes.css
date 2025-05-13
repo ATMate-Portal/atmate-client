@@ -303,7 +303,17 @@
 }
 
 .search-bar-container {
-  width: 700px;
+  max-width: 500px;
+  min-width: 350px;
+  width: 100%;
+  flex: 1;
+}
+
+@media (max-width: 768px) {
+  .search-bar-container {
+    max-width: 100%;
+    margin-top: 0.5rem;
+  }
 }
 
 .search-bar-container .form-control {

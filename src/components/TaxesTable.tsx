@@ -252,7 +252,8 @@ const TaxesTable: React.FC<TaxesTableProps> = ({ obrigações, loading, error, o
 
     return (
         <div className="container-fluid mt-5 animate-fade-in">
-            <div className="d-flex justify-content-between align-items-center mb-3">
+            <div className="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+
                 {lastUpdated && (
                     <p className="text-muted mb-0" onClick={onRefresh} style={{ cursor: 'pointer' }}>
                         <FontAwesomeIcon
@@ -266,8 +267,9 @@ const TaxesTable: React.FC<TaxesTableProps> = ({ obrigações, loading, error, o
                  {!lastUpdated && !loading && <p className="text-muted mb-0">Clique no ícone para atualizar.</p>}
             </div>
 
-            <div className="d-flex justify-content-between align-items-center mb-3">
-                <div className="d-flex gap-2 align-items-center flex-wrap">
+            <div className="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+
+                <div className="d-flex flex-wrap gap-2 align-items-center" style={{ flexGrow: 1 }}>
                     <div className="d-flex gap-2 align-items-center">
                         <label htmlFor="fromDate" className="form-label m-0 text-secondary small">De:</label>
                         <input
@@ -312,7 +314,7 @@ const TaxesTable: React.FC<TaxesTableProps> = ({ obrigações, loading, error, o
                 </div>
 
                 <div className="d-flex justify-content-end">
-                    <div className="position-relative d-flex align-items-center search-bar-container">
+                    <div className="position-relative d-flex align-items-center search-bar-container flex-grow-1">
                         <div className="search-icon">
                             <FontAwesomeIcon icon={faSearch} className="text-gray-400" />
                         </div>
