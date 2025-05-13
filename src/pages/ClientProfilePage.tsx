@@ -376,6 +376,7 @@ export default function ClientProfilePage() {
                     </>
                 )}
             </main>
+            
         </div>
     </div>
   );

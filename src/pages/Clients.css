@@ -2,16 +2,15 @@
 body {
     background-color: white; /* Ou qualquer outra cor desejada */
   }
-  .container-fluid {
-    padding: 20px;
-    width: 1500px; /* 40px é a soma do padding esquerdo e direito */
-    box-sizing: border-box; /* Inclui padding e border no cálculo da largura */
-  }
   
   .table-responsive {
     overflow-x: auto;
     width: 100%; /* Ocupa a largura disponível dentro do container-fluid */
   }
+
+  .table th, .table td {
+  white-space: nowrap;
+}
   
   .table-container {
     max-width: 1500px; /* Ajusta este valor para controlar a largura máxima da tabela */

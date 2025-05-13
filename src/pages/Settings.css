@@ -1,11 +1,4 @@
 
-/* Centering the container */
-.container-fluid {
-  justify-content: center;
-  align-items: center;
-  padding: 20px; /* Full height for centering */
-}
-
 /* Styling the card with a modern look */
 .card {
   border: none;

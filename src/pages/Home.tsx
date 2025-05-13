@@ -79,39 +79,40 @@ const Home: React.FC = () => {
   if (clientsError) return <p>Erro ao carregar clientes: {clientsError}</p>;
 
   return (
-    <div className="container animate-fade-in">
-      <div className="d-flex align-items-center">
-        <div>
-          {lastUpdated && (
-            <p className="text-muted">
-              <FontAwesomeIcon
-                icon={faSyncAlt}
-                className="mr-2 me-2"
-                style={{ cursor: 'pointer' }}
-                spin={refreshing}
-                onClick={handleRefresh} // Mover onClick para o ícone
-              />
-              Última atualização: {lastUpdated}
-            </p>
-          )}
-          {!lastUpdated && <p className="text-muted">Aguardando dados...</p>}
-        </div>
-      </div>
-      <div className="accordion-container">
-        <div className="accordion w-100 mx-auto" id="mainAccordion">
-          {clients?.map((client, index) => (
-            <ClientAccordionItem
-              key={client.clientId}
-              client={client}
-              index={index}
-              warningDays={warningDays ?? 7} // Valor padrão apenas para renderização
-              urgentDays={urgentDays ?? 2}
-            />
-          ))}
-        </div>
+  <div className="home-wrapper animate-fade-in">
+    <div className="top-bar">
+      {lastUpdated ? (
+        <p className="text-muted">
+          <FontAwesomeIcon
+            icon={faSyncAlt}
+            className="me-2"
+            style={{ cursor: "pointer" }}
+            spin={refreshing}
+            onClick={handleRefresh}
+          />
+          Última atualização: {lastUpdated}
+        </p>
+      ) : (
+        <p className="text-muted">Aguardando dados...</p>
+      )}
+    </div>
+
+    <div className="accordion-container">
+      <div className="accordion" id="mainAccordion">
+        {clients?.map((client, index) => (
+          <ClientAccordionItem
+            key={client.clientId}
+            client={client}
+            index={index}
+            warningDays={warningDays ?? 7}
+            urgentDays={urgentDays ?? 2}
+          />
+        ))}
       </div>
     </div>
-  );
+  </div>
+);
+
 };
 
 export default Home;

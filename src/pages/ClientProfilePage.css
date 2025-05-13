@@ -44,6 +44,12 @@
   box-sizing: border-box;
 }
 
+@media (max-width: 768px) {
+  .client-profile-main-container {
+    margin-left: 0;
+  }
+}
+
 .client-profile-main-container *,
 .client-profile-main-container *::before,
 .client-profile-main-container *::after {
@@ -164,6 +170,14 @@
 }
 .client-profile-main-container .data-table tbody tr { transition: background-color var(--transition-fast); }
 .client-profile-main-container .data-table tbody tr:hover { background-color: var(--primary-color-light); }
+
+.client-profile-main-container .data-table th,
+.client-profile-main-container .data-table td {
+  font-size: 0.85rem;
+  padding: 0.5rem;
+  white-space: nowrap;
+}
+
 
 /* Badges */
 .client-profile-main-container .badge { display: inline-block; padding: var(--space-1) var(--space-2); font-size: 0.75rem; font-weight: var(--font-weight-medium); line-height: 1; text-align: center; white-space: nowrap; vertical-align: baseline; border-radius: var(--border-radius-sm); }

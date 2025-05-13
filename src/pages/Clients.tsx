@@ -386,7 +386,7 @@ const Clients = () => {
                     <td style={cellStyle} className="text-secondary">{client.birthDate}</td>
                     <td style={cellStyle} className="text-secondary">
                       <div className="action-buttons">
-                        <button className="btn btn-sm btn-outline-secondary rounded-pill shadow-sm me-2"
+                        <button className="btn btn-sm btn-outline-primary rounded-pill shadow-sm"
                           onClick={() => handleClientClick(client.id)}>
                           <FontAwesomeIcon icon={faInfoCircle} className="me-1" /> Ver Detalhes
                         </button>

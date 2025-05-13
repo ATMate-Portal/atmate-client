@@ -2,13 +2,9 @@
 
 .container-fluid {
   padding: 20px;
-  width: 1500px;
+  width: 100%; /* Em vez de 1500px */
+  max-width: 100%;
   box-sizing: border-box;
-}
-
-.table-responsive {
-  overflow-x: auto;
-  width: 100%;
 }
 
 .table-container {
@@ -275,9 +271,10 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  width: 100%;
-  margin-bottom: 1rem;
+  flex-wrap: wrap;
+  gap: 1rem;
 }
+
 
 .left-column {
   margin-left: 0;
@@ -414,11 +411,15 @@
 
 
 #taxes-details-modal .modal-dialog {
-  max-width: 1100px; /* Your desired width */
-  width: 100%; /* Ensure it takes up the full available width up to max-width */
+  margin: 1.75rem auto; /* vertical spacing + centra horizontalmente */
+  display: flex;
+  align-items: center;
+  justify-content: center;
   animation: fadeIn 0.3s ease-out;
-  margin: 1.75rem auto;
+  max-width: 95vw; /* ocupa 95% da largura da viewport */
+  width: 100%;
 }
+
 
 #taxes-modal-content {
   border-radius: 16px;
@@ -426,6 +427,7 @@
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
   overflow: hidden;
   background-color: #ffffff;
+  width: 100%;
 }
 
 #taxes-modal-header {
@@ -760,5 +762,59 @@ input[type="date"] {
 @media (max-width: 1200px) {
   #taxes-details-modal .modal-dialog {
     max-width: 90%; /* Use a percentage width for smaller screens */
+  }
+}
+
+@media (max-width: 992px) {
+  .search-bar-container {
+    width: 100%;
+    margin-top: 1rem;
+  }
+
+  .d-flex.gap-2.flex-wrap {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem !important;
+  }
+
+  .table th,
+  .table td {
+    font-size: 0.9rem;
+    padding: 0.75rem 0.5rem;
+  }
+
+  .table-container {
+    padding: 10px;
+  }
+}
+
+@media (max-width: 768px) {
+  #taxes-modal-body {
+    padding: 1rem;
+  }
+
+  #taxes-details-list .detail-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  #taxes-details-list .detail-label {
+    min-width: auto;
+  }
+
+  .modal-title-colored {
+    font-size: 1rem;
+  }
+}
+
+
+@media (max-width: 768px) {
+  .mb-4.d-flex.gap-2 {
+    flex-direction: column;
+  }
+
+  .search-bar-container {
+    width: 100% !important;
   }
 }

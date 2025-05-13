@@ -1,16 +1,17 @@
 .sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
   width: 250px;
   height: 100vh;
-  background-color: #ABC3E8; /* Azul Bootstrap */
-  padding: 1.5rem 1rem;
-  position: fixed;
-  left: 0;
-  top: 0;
+  background-color: #ABC3E8;
   display: flex;
   flex-direction: column;
   align-items: center;
   box-shadow: 2px 0 5px rgba(0, 0, 0, 0.2);
+  z-index: 1000; /* garante que fica acima de tudo */
 }
+
 
 /* Título da sidebar */
 .sidebar-title {
@@ -57,7 +58,7 @@
 .nav-link-custom {
   color: #322D2D;
   font-weight: 600;
-  padding: 0.75rem 1rem;
+  padding: 0.75rem 1.5rem 0.75rem 2.5rem;
   border-radius: 8px;
   margin-bottom: 0.5rem;
   text-decoration: none;
@@ -80,12 +81,12 @@
 .nav-link-custom:hover {
   color: #322D2D;
   background-color: #8FA8D6; 
-  transform: scale(1.05);
+  transform: scale(1.0);
 }
 
 .nav-link-custom.active {
   background-color: #6D89B8; 
-  transform: scale(1.05);
+  transform: scale(1.0);
 }
 
 /* Barra decorativa entre a primeira opção e a imagem de perfil */

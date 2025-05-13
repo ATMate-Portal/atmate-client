@@ -8,16 +8,15 @@ import Sidebar from './components/layout/Sidebar';
 
 function App() {
   return (
-    <BrowserRouter>
-      <div className="flex min-h-screen">
+<BrowserRouter>
+  <div className="app-wrapper">
+    <Sidebar />
+    <main className="app-main">
+      <Router />
+    </main>
+  </div>
+</BrowserRouter>
 
-        <Sidebar />
-        <main className="">
-
-          <Router />
-        </main>
-      </div>
-    </BrowserRouter>
   );
 }
 

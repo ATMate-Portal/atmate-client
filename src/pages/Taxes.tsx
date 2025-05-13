@@ -36,7 +36,7 @@ const Taxes = () => {
         <TaxesTable
             obrigações={obrigações}
             loading={loading}
-            error={error}
+            error={error ? 'Erro ao carregar' : ''}
             onRefresh={handleRefresh}
             lastUpdated={lastUpdated}
             isRefreshing={isRefreshing}
