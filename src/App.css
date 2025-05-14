@@ -25,14 +25,19 @@ body {
 
 
 .app-wrapper {
+  display: flex;
   min-height: 100vh;
 }
 
 .app-main {
-  margin-left: 280px;
-  flex-grow: 1;
-  padding: 2rem;
-  overflow-x: hidden;
+  margin-left: 250px;
+  padding: 1rem;
+  transition: margin-left 0.3s ease;
+  width: 100%;
+}
+
+body.sidebar-collapsed .app-main {
+  margin-left: 80px;
 }
 
 
