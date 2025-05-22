@@ -81,9 +81,9 @@
 #notifications-layout {
   display: flex;
   flex-wrap: wrap;
-  gap: 3rem;
+  gap: 2rem;
   align-items: stretch;
-  width: 130%;
+  width: 100%;
   max-width: 1500px;
   margin-left: auto;
   margin-right: auto;
@@ -106,7 +106,7 @@
   background: #ffffff;
   border-radius: 8px;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.07);
-  padding: 2.5rem;
+  padding: 1.5rem;
   width: 100%;
   box-sizing: border-box;
   display: flex;
@@ -334,11 +334,17 @@
 
 
 /* --- Responsividade --- */
-@media (max-width: 992px) {
-  #notifications-layout { display: block; max-width: none; margin-left: 0; margin-right: 0; width: 100%; gap: 2rem; }
-  #notif-form-column, #notif-table-column { flex: auto; min-width: auto; width: 100%; }
-  #notif-form-column { margin-bottom: 2.5rem; }
-  #notif-header { width: 100%; }
+@media (max-width: 1500px) { /* Breakpoint ajustado */
+  #notifications-layout { display: block; max-width: none; margin-left: 0; margin-right: 0; width: 100%; gap: 1.5rem; padding: 0 1rem; overflow-x: hidden; }
+  #notif-form-column, #notif-table-column { flex: auto; min-width: auto; width: 100%; box-sizing: border-box; }
+  #notif-form-column { margin-bottom: 1.5rem; }
+  #notif-header { width: 100%; }
+  #notif-form-card { width: 85%; box-sizing: border-box; padding: 5.5rem; }
+  #notif-form-card input[type="text"], #notif-form-card input[type="number"], #notif-form-card select { width: 100%; max-width: 100%; box-sizing: border-box; }
+  .basic-multi-select, .basic-single-select { width: 100%; max-width: 100%; box-sizing: border-box; }
+  .select__control { width: 100% !important; box-sizing: border-box; }
+  #notif-form-actions { flex-wrap: wrap; justify-content: center; gap: 0.8rem; }
+.notification-card { width: 85%; }
 }
 
 @media (max-width: 768px) {
