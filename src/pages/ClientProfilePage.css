@@ -132,10 +132,9 @@
   overflow: hidden; /* Para que o conteúdo interno respeite o border-radius da secção */
   transition: var(--transition-base);
 }
-.client-profile-main-container .profile-section:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-md); /* Sombra no hover pode ser mantida ou removida/suavizada */
-}
+
+
+
 .client-profile-main-container .profile-section:last-child {
    margin-bottom: 0; /* Remove margem da última secção para alinhar com o fundo da caixa */
 }

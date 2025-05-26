@@ -492,6 +492,7 @@
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
+
 #taxes-details-card:hover {
   transform: translateY(-4px);
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
@@ -566,7 +567,7 @@
 
 #taxes-details-list .badge-paid {
   background-color: #d1fae5;
-  color: #059669;
+  color: #ffffff;
 }
 
 #taxes-details-list .badge-canceled {

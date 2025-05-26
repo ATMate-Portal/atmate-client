@@ -1,8 +1,11 @@
-import React, { useState, useEffect, ChangeEvent, useCallback } from 'react';
+import React, { useState, useEffect, ChangeEvent, useCallback, useRef } from 'react';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSearch, faSortUp, faSortDown, faInfoCircle, faSyncAlt, faTag, faUser, faCalendar, faEuroSign, faCheckCircle, faFileAlt, faChevronDown, faChevronUp } from '@fortawesome/free-solid-svg-icons';
-import '../pages/Taxes.css'; // Ensure this CSS file has the .badge-anulada, .badge-emitida, etc. styles
+import '../pages/Taxes.css'; // Certifique-se que este CSS existe e está correto
+
+// @ts-ignore - Para permitir window.bootstrap (se não tiver tipos)
+declare var window: any;
 
 interface ObrigacaoFiscal {
     identificadorUnico: string;
@@ -17,10 +20,12 @@ interface ObrigacaoFiscal {
 interface TaxesTableProps {
     obrigações: ObrigacaoFiscal[] | null;
     loading: boolean;
-    error: string; 
+    error: string;
     onRefresh: () => void;
     lastUpdated: string | null;
     isRefreshing: boolean;
+    onModalOpen: () => void; // <-- Nova Prop
+    onModalClose: () => void; // <-- Nova Prop
 }
 
 // Revised helper function to get badge class for modal and table
@@ -39,22 +44,33 @@ const getBadgeClassForEstado = (estado?: string): string => {
     if (currentEstado === "Pendente") return 'badge-pending';
     if (currentEstado === "Pago" || currentEstado === "Paga") return 'badge-paid';
     if (currentEstado === "Anulada") return 'badge-anulada';
-    if (currentEstado === "Emitida") return 'badge-emitida'; 
+    if (currentEstado === "Emitida") return 'badge-emitida';
     if (currentEstado === "Pendente de Emissão") return 'badge-pendente-emissao';
 
     // Handle cases with .includes() for more flexibility, order can be important
     if (lowerEstado.includes('pendente de emissão')) return 'badge-pendente-emissao';
-    if (lowerEstado.includes('emitida')) return 'badge-emitida'; 
+    if (lowerEstado.includes('emitida')) return 'badge-emitida';
     if (lowerEstado.includes('anulada')) return 'badge-anulada';
-    if (lowerEstado.includes('paga')) return 'badge-paid'; 
-    
+    if (lowerEstado.includes('paga')) return 'badge-paid';
+
     if (lowerEstado.includes('pendente')) return 'badge-pending';
-    
-    return 'badge-secondary'; 
+
+    return 'badge-secondary';
 };
 
 
-const TaxesTable: React.FC<TaxesTableProps> = ({ obrigações, loading, error, onRefresh, lastUpdated, isRefreshing }) => {
+const TaxesTable: React.FC<TaxesTableProps> = React.memo(({
+    obrigações,
+    loading,
+    error,
+    onRefresh,
+    lastUpdated,
+    isRefreshing,
+    onModalOpen,
+    onModalClose
+}) => {
+    console.log("TaxesTable RENDERED", { loading, isRefreshing, lastUpdated }); // Log para depuração
+
     const [searchTerm, setSearchTerm] = useState('');
     const [filterType, setFilterType] = useState<string>('Todos');
     const [tiposDeObrigacao, setTiposDeObrigacao] = useState<string[]>(['Todos']);
@@ -66,6 +82,7 @@ const TaxesTable: React.FC<TaxesTableProps> = ({ obrigações, loading, error, o
     const [estadosDisponiveis, setEstadosDisponiveis] = useState<string[]>(['Todos']);
     const [selectedObrigacao, setSelectedObrigacao] = useState<ObrigacaoFiscal | null>(null);
     const [showVehicleDetails, setShowVehicleDetails] = useState(false);
+    const modalRef = useRef<HTMLDivElement>(null);
 
     // Utility function to format field names
     const formatFieldName = (key: string): string => {
@@ -136,6 +153,29 @@ const TaxesTable: React.FC<TaxesTableProps> = ({ obrigações, loading, error, o
         }
     }, [obrigações]);
 
+    // useEffect para escutar eventos do modal Bootstrap
+    useEffect(() => {
+        const modalElement = modalRef.current;
+        if (modalElement) {
+            const handleModalShow = () => {
+                console.log("Modal SHOWN event fired!"); // <-- Log de Depuração
+                if (onModalOpen) onModalOpen();
+            };
+            const handleModalHide = () => {
+                console.log("Modal HIDDEN event fired!"); // <-- Log de Depuração
+                if (onModalClose) onModalClose();
+            };
+
+            modalElement.addEventListener('shown.bs.modal', handleModalShow);
+            modalElement.addEventListener('hidden.bs.modal', handleModalHide);
+
+            return () => {
+                modalElement.removeEventListener('shown.bs.modal', handleModalShow);
+                modalElement.removeEventListener('hidden.bs.modal', handleModalHide);
+            };
+        }
+    }, [onModalOpen, onModalClose]);
+
     const handleSearch = (event: ChangeEvent<HTMLInputElement>) => {
         setSearchTerm(event.target.value);
     };
@@ -158,7 +198,7 @@ const TaxesTable: React.FC<TaxesTableProps> = ({ obrigações, loading, error, o
     };
 
     const handleShowDetails = (obrigacao: ObrigacaoFiscal) => {
-        console.log("Selected Obrigacao Estado for Modal:", obrigacao.estado); 
+        console.log("Selected Obrigacao Estado for Modal:", obrigacao.estado);
         setSelectedObrigacao(obrigacao);
         setShowVehicleDetails(false);
     };
@@ -174,14 +214,14 @@ const TaxesTable: React.FC<TaxesTableProps> = ({ obrigações, loading, error, o
 
     const filteredObrigações = (obrigações || []).filter((obrigacao) => {
         const typeMatch = filterType === 'Todos' || obrigacao.tipo === filterType;
-        
+
         const dateMatch =
             (!fromDate || new Date(obrigacao.dataLimite) >= new Date(fromDate)) &&
             (!toDate || new Date(obrigacao.dataLimite) <= new Date(toDate));
-        
+
         const estadoParaFiltro = obrigacao.estado === '-' ? 'Pendente' : obrigacao.estado;
         const estadoMatch = estadoFilter === 'Todos' || estadoParaFiltro === estadoFilter;
-        
+
         const normalize = (str: string) => str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
         const normalizedSearch = normalize(searchTerm);
 
@@ -191,7 +231,7 @@ const TaxesTable: React.FC<TaxesTableProps> = ({ obrigações, loading, error, o
             obrigacao.dataLimite,
             obrigacao.clientName,
             String(obrigacao.valor),
-            estadoParaFiltro 
+            estadoParaFiltro
         ];
 
         const searchMatch = searchFields.some(field => normalize(String(field)).includes(normalizedSearch)); // Ensure field is string
@@ -214,7 +254,7 @@ const TaxesTable: React.FC<TaxesTableProps> = ({ obrigações, loading, error, o
                 if (dateA && dateB) {
                     comparison = dateA.getTime() - dateB.getTime();
                 } else if (dateA) {
-                    comparison = 1; 
+                    comparison = 1;
                 } else if (dateB) {
                     comparison = -1;
                 }
@@ -252,8 +292,7 @@ const TaxesTable: React.FC<TaxesTableProps> = ({ obrigações, loading, error, o
 
     return (
         <div className="container-fluid mt-5 animate-fade-in">
-            <div className="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
-
+            <div className="d-flex justify-content-between align-items-center mb-3">
                 {lastUpdated && (
                     <p className="text-muted mb-0" onClick={onRefresh} style={{ cursor: 'pointer' }}>
                         <FontAwesomeIcon
@@ -264,12 +303,11 @@ const TaxesTable: React.FC<TaxesTableProps> = ({ obrigações, loading, error, o
                         Última atualização: {lastUpdated}
                     </p>
                 )}
-                 {!lastUpdated && !loading && <p className="text-muted mb-0">Clique no ícone para atualizar.</p>}
+                {!lastUpdated && !loading && <p className="text-muted mb-0">Clique no ícone para atualizar.</p>}
             </div>
 
-            <div className="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
-
-                <div className="d-flex flex-wrap gap-2 align-items-center" style={{ flexGrow: 1 }}>
+            <div className="d-flex justify-content-between align-items-center mb-3">
+                <div className="d-flex gap-2 align-items-center flex-wrap">
                     <div className="d-flex gap-2 align-items-center">
                         <label htmlFor="fromDate" className="form-label m-0 text-secondary small">De:</label>
                         <input
@@ -314,7 +352,7 @@ const TaxesTable: React.FC<TaxesTableProps> = ({ obrigações, loading, error, o
                 </div>
 
                 <div className="d-flex justify-content-end">
-                    <div className="position-relative d-flex align-items-center search-bar-container flex-grow-1">
+                    <div className="position-relative d-flex align-items-center search-bar-container">
                         <div className="search-icon">
                             <FontAwesomeIcon icon={faSearch} className="text-gray-400" />
                         </div>
@@ -376,7 +414,6 @@ const TaxesTable: React.FC<TaxesTableProps> = ({ obrigações, loading, error, o
                                             <td style={cellStyle} className="text-secondary">{obrigacao.clientName}</td>
                                             <td style={cellStyle} className="text-end text-secondary">{obrigacao.valor}</td>
                                             <td style={cellStyle} className="text-center">
-                                                {/* Apply modern-badge for consistent styling with modal if desired, or just badge + color class */}
                                                 <span className={`badge modern-badge ${classeDoBadge}`}>
                                                     {estadoTextParaExibir}
                                                 </span>
@@ -401,7 +438,7 @@ const TaxesTable: React.FC<TaxesTableProps> = ({ obrigações, loading, error, o
             </div>
 
             {/* Modal de Detalhes da Obrigação Fiscal */}
-            <div className="modal fade" id="taxes-details-modal" tabIndex={-1} aria-labelledby="taxes-details-modal-label" aria-hidden="true">
+            <div ref={modalRef} className="modal fade" id="taxes-details-modal" tabIndex={-1} aria-labelledby="taxes-details-modal-label" aria-hidden="true">
                 <div className="modal-dialog modal-xl modal-dialog-centered">
                     <div className="modal-content" id="taxes-modal-content">
                         <div className="modal-header" id="taxes-modal-header">
@@ -425,8 +462,8 @@ const TaxesTable: React.FC<TaxesTableProps> = ({ obrigações, loading, error, o
                                                 <span className="detail-label">Tipo:</span>
                                                 <span className="detail-value">{selectedObrigacao.tipo}</span>
                                             </div>
-                                            <div 
-                                                className="detail-row d-flex align-items-center" 
+                                            <div
+                                                className="detail-row d-flex align-items-center"
                                                 id="taxes-detail-row-referencia"
                                                 style={{ cursor: selectedObrigacao.tipo === 'IUC' ? 'pointer' : 'default' }}
                                                 onClick={selectedObrigacao.tipo === 'IUC' ? toggleVehicleDetails : undefined}
@@ -437,8 +474,8 @@ const TaxesTable: React.FC<TaxesTableProps> = ({ obrigações, loading, error, o
                                                 </span>
                                                 <span className="detail-value flex-grow-1">{selectedObrigacao.identificadorUnico}</span>
                                                 {selectedObrigacao.tipo === 'IUC' && (
-                                                    <FontAwesomeIcon 
-                                                        icon={showVehicleDetails ? faChevronUp : faChevronDown} 
+                                                    <FontAwesomeIcon
+                                                        icon={showVehicleDetails ? faChevronUp : faChevronDown}
                                                         className="ms-2 text-muted"
                                                     />
                                                 )}
@@ -452,12 +489,12 @@ const TaxesTable: React.FC<TaxesTableProps> = ({ obrigações, loading, error, o
                                                                 const jsonData = JSON.parse(selectedObrigacao.json);
                                                                 const vehicleDetails = jsonData.detalhes_veiculo || {};
                                                                 const validEntries = Object.entries(vehicleDetails).filter(
-                                                                    ([key, value]) => 
+                                                                    ([key, value]) =>
                                                                         !fieldsToExclude.includes(key) &&
                                                                         !fieldsToExclude.includes(formatFieldName(key)) &&
-                                                                        value != null && 
-                                                                        String(value).trim() !== '' && 
-                                                                        String(value).toLowerCase() !== 'null' && 
+                                                                        value != null &&
+                                                                        String(value).trim() !== '' &&
+                                                                        String(value).toLowerCase() !== 'null' &&
                                                                         String(value) !== '-'
                                                                 );
                                                                 if (validEntries.length === 0) {
@@ -473,9 +510,9 @@ const TaxesTable: React.FC<TaxesTableProps> = ({ obrigações, loading, error, o
                                                                     const formattedKey = formatFieldName(key);
                                                                     const formattedValue = formatValue(value);
                                                                     return (
-                                                                        <div 
-                                                                            className="detail-row mb-2" 
-                                                                            key={`vehicle-${safeKey}`} 
+                                                                        <div
+                                                                            className="detail-row mb-2"
+                                                                            key={`vehicle-${safeKey}`}
                                                                             id={`taxes-detail-row-vehicle-${safeKey}`}
                                                                         >
                                                                             <FontAwesomeIcon icon={faFileAlt} className="detail-icon me-2" />
@@ -522,48 +559,26 @@ const TaxesTable: React.FC<TaxesTableProps> = ({ obrigações, loading, error, o
                                                 try {
                                                     const jsonData = JSON.parse(selectedObrigacao.json);
                                                     const generalEntries = Object.entries(jsonData).filter(
-                                                        ([key]) =>
-                                                            key !== 'detalhes_veiculo' && 
-                                                            !fieldsToExclude.includes(key) &&
-                                                            !fieldsToExclude.includes(formatFieldName(key)) &&
-                                                            key.toLowerCase() !== 'tipo' && 
-                                                            key.toLowerCase() !== 'identificadorunico' &&
-                                                            key.toLowerCase() !== 'datalimite' && 
-                                                            key.toLowerCase() !== 'clientname' &&
-                                                            key.toLowerCase() !== 'valor' && 
-                                                            key.toLowerCase() !== 'estado' &&
-                                                            key.toLowerCase() !== 'situação da nota' && 
-                                                            key.toLowerCase() !== 'matrícula' && 
-                                                            key.toLowerCase() !== 'nº nota cob.' && 
-                                                            key.toLowerCase() !== 'valor base' && 
-                                                            key.toLowerCase() !== 'data limite de pagamento' && 
-                                                            jsonData[key] != null &&
-                                                            String(jsonData[key]).trim() !== '' &&
-                                                            String(jsonData[key]).toLowerCase() !== 'null' &&
-                                                            String(jsonData[key]) !== '-'
+                                                        ([key, value]) =>
+                                                            key !== 'detalhes_veiculo' && !fieldsToExclude.includes(key) &&
+                                                            !fieldsToExclude.includes(formatFieldName(key)) && key.toLowerCase() !== 'tipo' &&
+                                                            key.toLowerCase() !== 'identificadorunico' && key.toLowerCase() !== 'datalimite' &&
+                                                            key.toLowerCase() !== 'clientname' && key.toLowerCase() !== 'valor' &&
+                                                            key.toLowerCase() !== 'estado' && key.toLowerCase() !== 'situação da nota' &&
+                                                            key.toLowerCase() !== 'matrícula' && key.toLowerCase() !== 'nº nota cob.' &&
+                                                            key.toLowerCase() !== 'valor base' && key.toLowerCase() !== 'data limite de pagamento' &&
+                                                            value != null && String(value).trim() !== '' &&
+                                                            String(value).toLowerCase() !== 'null' && String(value) !== '-'
                                                     );
-                                                    if (generalEntries.length === 0 && !jsonData.detalhes_veiculo) {
-                                                         return null; 
-                                                    }
+                                                    if (generalEntries.length === 0 && !jsonData.detalhes_veiculo) { return null; }
                                                     return generalEntries.map(([key, value]) => {
                                                         const safeKey = key.toLowerCase().replace(/[^a-z0-9]/g, '-');
                                                         const formattedKey = formatFieldName(key);
                                                         const formattedValue = formatValue(value);
-                                                        return (
-                                                            <div className="detail-row" key={`general-${safeKey}`} id={`taxes-detail-row-${safeKey}`}>
-                                                                <FontAwesomeIcon icon={faFileAlt} className="detail-icon" />
-                                                                <span className="detail-label">{formattedKey}:</span>
-                                                                <span className="detail-value">{formattedValue}</span>
-                                                            </div>
-                                                        );
+                                                        return (<div className="detail-row" key={`general-${safeKey}`} id={`taxes-detail-row-${safeKey}`}><FontAwesomeIcon icon={faFileAlt} className="detail-icon" /><span className="detail-label">{formattedKey}:</span><span className="detail-value">{formattedValue}</span></div>);
                                                     });
                                                 } catch (e) {
-                                                    return (
-                                                        <div className="detail-row text-danger" id="taxes-detail-row-json-error">
-                                                            <FontAwesomeIcon icon={faFileAlt} className="detail-icon" />
-                                                            <span className="detail-value">Não foi possível carregar os detalhes adicionais.</span>
-                                                        </div>
-                                                    );
+                                                    return (<div className="detail-row text-danger" id="taxes-detail-row-json-error"><FontAwesomeIcon icon={faFileAlt} className="detail-icon" /><span className="detail-value">Não foi possível carregar os detalhes adicionais.</span></div>);
                                                 }
                                             })()}
                                         </div>
@@ -591,6 +606,6 @@ const TaxesTable: React.FC<TaxesTableProps> = ({ obrigações, loading, error, o
             </div>
         </div>
     );
-};
+});
 
 export default TaxesTable;

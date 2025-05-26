@@ -239,7 +239,7 @@ const Notifications: React.FC = () => {
     const getSubmitBody = useCallback((): CreateNotificationRequestPayload | UpdateNotificationRequestPayload | null => {
         if (!editingGroupKey) { // MODO CRIAÇÃO
             const clientIdsToSend = clientSelectionMode === 'all'
-                ? [] // Backend pode interpretar lista vazia como "todos" ou precisamos enviar todos os IDs? Confirme com o backend. Se precisar enviar todos: allClients.map(c => c.id)
+                ? allClients.map(c => c.id) // Backend pode interpretar lista vazia como "todos" ou precisamos enviar todos os IDs? Confirme com o backend. Se precisar enviar todos: allClients.map(c => c.id)
                 : selectedClients.map(c => c.id);
 
             // Validação básica antes de retornar
@@ -279,7 +279,7 @@ const Notifications: React.FC = () => {
                 active: groupBeingEdited.active,
             };
         }
-    }, [editingGroupKey, formData, clientSelectionMode, selectedClients, /*allClients,*/ groupedConfigs]); // Removido allClients se backend trata lista vazia como "todos"
+    }, [editingGroupKey, formData, clientSelectionMode, selectedClients, allClients, groupedConfigs]); // Removido allClients se backend trata lista vazia como "todos"
 
     // Atualiza o timestamp da última atualização quando todos os dados carregam
     useEffect(() => {
