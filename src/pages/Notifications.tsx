@@ -8,7 +8,8 @@ import {
     faEdit, faTrashAlt, faSearch, faTimesCircle, faExclamationTriangle, faCheckCircle,
     faFilter, faUsers, faGlobe, faList,
     faChevronLeft, faChevronRight, faRedo,
-    faEnvelopeOpen // Icone adicionado para ver mensagens
+    faEnvelopeOpen, // Icone adicionado para ver mensagens
+    faPaperPlane // Icone adicionado para forçar envio
 } from '@fortawesome/free-solid-svg-icons';
 import useApi from '../hooks/useApi'; // Assume que este hook existe e funciona como esperado
 
@@ -141,6 +142,12 @@ interface ClientNotification {
 }
 // ----------------------------------------------------------------------
 
+// Coloque esta função no topo do seu ficheiro Notifications.js
+const normalize = (str: string) => {
+    if (!str) return ""; // Garante que não tenta normalizar null/undefined
+    return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+};
+
 const Notifications: React.FC = () => {
     // --- Estados ---
     const initialFormData: FormDataState = useMemo(() => ({ // Usar useMemo para garantir objeto estável
@@ -160,7 +167,8 @@ const Notifications: React.FC = () => {
     const [createLoading, setCreateLoading] = useState<boolean>(false); // Loading do submit (criar/editar)
     const [isDeleting, setIsDeleting] = useState<boolean>(false); // Loading de apagar
     const [isTogglingStatus, setIsTogglingStatus] = useState<boolean>(false); // Loading de ativar/desativar
-    const [processingGroupId, setProcessingGroupId] = useState<string | null>(null); // ID do grupo em processamento (delete/toggle)
+    const [isForcingSend, setIsForcingSend] = useState<boolean>(false); // *** NOVO ESTADO: Loading para forçar envio ***
+    const [processingGroupId, setProcessingGroupId] = useState<string | null>(null); // ID do grupo em processamento (delete/toggle/forceSend)
     const [notificationMessage, setNotificationMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
     const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'inactive'>('all');
     const [currentPage, setCurrentPage] = useState(1);
@@ -193,8 +201,8 @@ const Notifications: React.FC = () => {
         originalConfigs.forEach((config) => {
             // Validação mais robusta para evitar erros com dados incompletos da API
             if (!config?.notificationType?.id || !config?.taxType?.id || !config.frequency || config.startPeriod == null || config.active == null) {
-                 console.warn("Configuração inválida ou incompleta da API ignorada:", config);
-                 return; // Ignora configs que não podem ser agrupadas corretamente
+                console.warn("Configuração inválida ou incompleta da API ignorada:", config);
+                return; // Ignora configs que não podem ser agrupadas corretamente
             }
             const groupKey = `${config.notificationType.id}-${config.taxType.id}-${config.frequency}-${config.startPeriod}-${config.active}`;
             if (!groups[groupKey]) {
@@ -239,7 +247,7 @@ const Notifications: React.FC = () => {
     const getSubmitBody = useCallback((): CreateNotificationRequestPayload | UpdateNotificationRequestPayload | null => {
         if (!editingGroupKey) { // MODO CRIAÇÃO
             const clientIdsToSend = clientSelectionMode === 'all'
-                ? allClients.map(c => c.id) // Backend pode interpretar lista vazia como "todos" ou precisamos enviar todos os IDs? Confirme com o backend. Se precisar enviar todos: allClients.map(c => c.id)
+                ? [] // Backend deve interpretar lista vazia como "todos" - se precisar de todos os IDs: allClients.map(c => c.id)
                 : selectedClients.map(c => c.id);
 
             // Validação básica antes de retornar
@@ -264,8 +272,8 @@ const Notifications: React.FC = () => {
             }
             // Validação básica antes de retornar
             if (!formData.frequency || formData.startPeriod == null || formData.startPeriod < 1) {
-                 console.error("Tentativa de criar payload inválido (Edição)");
-                 return null;
+                console.error("Tentativa de criar payload inválido (Edição)");
+                return null;
             }
 
             return {
@@ -279,7 +287,7 @@ const Notifications: React.FC = () => {
                 active: groupBeingEdited.active,
             };
         }
-    }, [editingGroupKey, formData, clientSelectionMode, selectedClients, allClients, groupedConfigs]); // Removido allClients se backend trata lista vazia como "todos"
+    }, [editingGroupKey, formData, clientSelectionMode, selectedClients, groupedConfigs]); // Removido allClients se backend trata lista vazia
 
     // Atualiza o timestamp da última atualização quando todos os dados carregam
     useEffect(() => {
@@ -288,6 +296,7 @@ const Notifications: React.FC = () => {
             setLastUpdated(
                 `${now.toLocaleDateString('pt-PT', { day: '2-digit', month: '2-digit', year: 'numeric' })} ${now.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })}`
             );
+            setIsRefreshingData(false); // Garante que volta a false
         }
     }, [clientsLoading, taxTypesLoading, configsLoading, isRefreshingData]);
 
@@ -302,6 +311,7 @@ const Notifications: React.FC = () => {
         setCreateLoading(false);
         setIsDeleting(false);
         setIsTogglingStatus(false);
+        setIsForcingSend(false); // *** NOVO: Resetar estado de 'force send' ***
         setProcessingGroupId(null);
         // Resetar também os estados do modal de mensagens
         setIsMessagesModalOpen(false);
@@ -396,10 +406,10 @@ const Notifications: React.FC = () => {
         // Validação robusta do payload antes de enviar
         const clientsValid = clientSelectionMode === 'all' || (payload?.clientsIDs?.length ?? 0) > 0;
         if (!payload || !clientsValid || (payload.taxTypeIDs?.length ?? 0) === 0 || (payload.notificationTypeList?.length ?? 0) === 0) {
-             let errorMsg = 'Dados inválidos para criação. Verifique:';
-             if (!clientsValid) errorMsg += ' Destinatários (selecione clientes ou "Todos"),';
-             if ((payload?.notificationTypeList?.length ?? 0) === 0) errorMsg += ' Tipos de Notificação,';
-             if ((payload?.taxTypeIDs?.length ?? 0) === 0) errorMsg += ' Impostos.';
+            let errorMsg = 'Dados inválidos para criação. Verifique:';
+            if (!clientsValid) errorMsg += ' Destinatários (selecione clientes ou "Todos"),';
+            if ((payload?.notificationTypeList?.length ?? 0) === 0) errorMsg += ' Tipos de Notificação,';
+            if ((payload?.taxTypeIDs?.length ?? 0) === 0) errorMsg += ' Impostos.';
             setNotificationMessage({ type: 'error', text: errorMsg });
             setCreateLoading(false);
             return;
@@ -423,7 +433,7 @@ const Notifications: React.FC = () => {
         } finally {
             setCreateLoading(false);
         }
-    }, [getSubmitBody, resetFormAndState, FULL_API_BASE_URL, clientSelectionMode]);
+    }, [getSubmitBody, resetFormAndState, clientSelectionMode]); // Removido FULL_API_BASE_URL (é constante)
 
     // Função auxiliar para extrair o HTML do elemento <div class="details"> e seus filhos
     const extractDetailsDivHtml = (fullHtmlString: string): string | null => {
@@ -480,14 +490,8 @@ const Notifications: React.FC = () => {
         let errorCount = 0;
         let lastErrorMessage = "";
 
-        // Itera sobre cada ID original do grupo e envia um PUT para cada um
-        // O backend espera um PUT por ID, atualizando os campos frequency, startPeriod
-        // e potencialmente active (embora 'active' seja enviado como o estado original do grupo).
         for (const originalId of idsToUpdate) {
-            // O payload é o mesmo para todas as atualizações dentro do grupo,
-            // contendo os dados do formulário (freq, period) e os fixos (typeId, taxId, active original).
             const finalPayload: UpdateNotificationRequestPayload = { ...payloadBasis };
-
             try {
                 await axios.put<ApiResponseData>(`${FULL_API_BASE_URL}atmate-gateway/notification/update/${originalId}`, finalPayload);
                 successCount++;
@@ -511,7 +515,7 @@ const Notifications: React.FC = () => {
         } else if (successCount > 0 && errorCount > 0) {
             setNotificationMessage({ type: 'error', text: `${successCount} atualizada(s), ${errorCount} falharam. Último erro: ${lastErrorMessage}` });
         } else if (errorCount > 0) {
-             setNotificationMessage({ type: 'error', text: isSingleConfigEditContext ? `Erro ao atualizar: ${lastErrorMessage}` : `Erro ao atualizar configurações do grupo. Último erro: ${lastErrorMessage}` });
+            setNotificationMessage({ type: 'error', text: isSingleConfigEditContext ? `Erro ao atualizar: ${lastErrorMessage}` : `Erro ao atualizar configurações do grupo. Último erro: ${lastErrorMessage}` });
         }
 
         // Se houve sucesso, reseta o form e atualiza a lista
@@ -519,7 +523,7 @@ const Notifications: React.FC = () => {
             resetFormAndState();
             setRefreshTrigger(p => p + 1);
         }
-    }, [editingGroupKey, getSubmitBody, resetFormAndState, FULL_API_BASE_URL, groupedConfigs]);
+    }, [editingGroupKey, getSubmitBody, resetFormAndState, groupedConfigs]); // Removido FULL_API_BASE_URL
 
     // Handler principal do submit do formulário
     const handleSubmit = useCallback((e: React.FormEvent) => {
@@ -594,7 +598,9 @@ const Notifications: React.FC = () => {
 
         // Confirmação para apagar
         if (action === 'delete') {
-            const confirmation = window.confirm(`Tem a certeza que deseja apagar ${idsToProcess.length > 1 ? `as ${idsToProcess.length} configurações agrupadas` : `esta configuração`}?\nA ação é irreversível e afetará ${group.clients.filter(c => c !== null).length} cliente(s) ${group.hasGlobalConfig ? 'e a configuração global' : ''}.`);
+            const clientCount = group.clients.filter(c => c !== null).length;
+            const globalText = group.hasGlobalConfig ? 'e a configuração global' : '';
+            const confirmation = window.confirm(`Tem a certeza que deseja apagar ${idsToProcess.length > 1 ? `as ${idsToProcess.length} configurações agrupadas` : `esta configuração`}?\nA ação é irreversível e afetará ${clientCount} cliente(s) ${globalText}.`);
             if (!confirmation) {
                 return; // Cancela se o utilizador não confirmar
             }
@@ -624,11 +630,8 @@ const Notifications: React.FC = () => {
             setIsTogglingStatus(true);
             const newActiveState = !group.active; // O novo estado é o oposto do atual do grupo
             for (const id of idsToProcess) {
-                // O endpoint de toggle pode ser um PUT específico ou o update geral
-                // Usando PUT específico para status: /update/{id}/status?active={newState}
-                 const url = `${FULL_API_BASE_URL}atmate-gateway/notification/update/${id}/status?active=${newActiveState}`;
+                const url = `${FULL_API_BASE_URL}atmate-gateway/notification/update/${id}/status?active=${newActiveState}`;
                 try {
-                     // Enviar PUT sem corpo (ou com corpo vazio se necessário pelo backend)
                     await axios.put<ApiResponseData>(url, null);
                     successCount++;
                 } catch (err) {
@@ -647,22 +650,75 @@ const Notifications: React.FC = () => {
         if (successCount > 0 && errorCount === 0) {
             setNotificationMessage({ type: 'success', text: `${successCount} configuração(ões) ${action === 'delete' ? 'apagada(s)' : 'atualizada(s)'} com sucesso!` });
         } else if (successCount > 0 && errorCount > 0) {
-             setNotificationMessage({ type: 'error', text: `Operação parcialmente concluída: ${successCount} sucesso(s), ${errorCount} falha(s). Último erro: ${lastErrorMessage}` });
+            setNotificationMessage({ type: 'error', text: `Operação parcialmente concluída: ${successCount} sucesso(s), ${errorCount} falha(s). Último erro: ${lastErrorMessage}` });
         } else if (errorCount > 0) {
-             setNotificationMessage({ type: 'error', text: `Falha ao ${action === 'delete' ? 'apagar' : 'atualizar'} configuração(ões). Último erro: ${lastErrorMessage}` });
+            setNotificationMessage({ type: 'error', text: `Falha ao ${action === 'delete' ? 'apagar' : 'atualizar'} configuração(ões). Último erro: ${lastErrorMessage}` });
         }
 
         // Se algo mudou (sucesso total ou parcial), atualiza a lista
         if (successCount > 0) {
             setRefreshTrigger(p => p + 1);
-            // Se o grupo que estava a ser editado foi apagado, cancela a edição
             if (editingGroupKey === group.key && action === 'delete') {
                 resetFormAndState();
             }
-             // Se o estado do grupo editado foi alterado pelo toggle, não precisamos fazer nada extra aqui,
-             // pois o formulário de edição não mexe no 'active'. O refresh tratará da atualização visual.
         }
-    }, [FULL_API_BASE_URL, resetFormAndState, editingGroupKey, groupedConfigs]); // groupedConfigs adicionado como dependencia
+    }, [resetFormAndState, editingGroupKey, groupedConfigs]); // Removido FULL_API_BASE_URL
+
+    // *** NOVA FUNÇÃO: Forçar Envio de Notificações ***
+    const handleForceSend = useCallback(async (group: GroupedConfig) => {
+        const idsToProcess = group.originalIds;
+        if (!idsToProcess || idsToProcess.length === 0) {
+            setNotificationMessage({ type: 'error', text: 'Nenhuma configuração associada a este grupo para processar.' });
+            return;
+        }
+
+        const confirmation = window.confirm(`Tem a certeza que deseja forçar o envio imediato para ${idsToProcess.length > 1 ? `as ${idsToProcess.length} configurações deste grupo` : `esta configuração`}? Esta ação pode enviar múltiplas notificações.`);
+        if (!confirmation) {
+            return;
+        }
+
+        setNotificationMessage(null);
+        setProcessingGroupId(group.key);
+        setIsForcingSend(true);
+        let successCount = 0;
+        let errorCount = 0;
+        let lastErrorMessage = "";
+
+        for (const id of idsToProcess) {
+            try {
+                // Usando POST conforme assumido. Ajuste se o método for PUT ou outro.
+                await axios.post<ApiResponseData>(`${FULL_API_BASE_URL}atmate-gateway/notification/forceSend/${id}`, null); // Envia POST sem corpo
+                successCount++;
+            } catch (err) {
+                errorCount++;
+                console.error(`Erro ao forçar envio para config ID ${id}:`, err);
+                let msg = "Erro ao forçar envio.";
+                if (axios.isAxiosError(err)) {
+                    const errorResponse = err.response?.data;
+                    msg = errorResponse?.message || errorResponse?.error || err.message;
+                } else if (err instanceof Error) {
+                    msg = err.message;
+                }
+                lastErrorMessage = `ID ${id}: ${msg}`;
+            }
+        }
+
+        setIsForcingSend(false);
+        setProcessingGroupId(null);
+
+        // Feedback final
+        if (successCount > 0 && errorCount === 0) {
+            setNotificationMessage({ type: 'success', text: `${successCount} notificação(ões) enviada(s) para processamento com sucesso!` });
+            // Pode ser útil abrir o modal de mensagens aqui, ou dar refresh, mas mantendo simples por agora.
+        } else if (successCount > 0 && errorCount > 0) {
+            setNotificationMessage({ type: 'error', text: `Envio parcialmente concluído: ${successCount} sucesso(s), ${errorCount} falha(s). Último erro: ${lastErrorMessage}` });
+        } else if (errorCount > 0) {
+            setNotificationMessage({ type: 'error', text: `Falha ao forçar envio. Último erro: ${lastErrorMessage}` });
+        }
+
+        // Não força refresh, mas o utilizador pode querer ver o histórico.
+    }, []); // Removido FULL_API_BASE_URL
+
 
     // Handler para mudar o filtro de status da tabela
     const handleFilterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -681,7 +737,7 @@ const Notifications: React.FC = () => {
         setIsClientModalOpen(true);
     }, []);
 
-     // --- Nova Função para buscar e mostrar mensagens ---
+    // --- Nova Função para buscar e mostrar mensagens ---
     const handleShowMessages = useCallback(async (group: GroupedConfig) => {
         if (!group || !group.originalIds || group.originalIds.length === 0) {
             setNotificationMessage({ type: 'error', text: 'Grupo inválido ou sem IDs de configuração associados.' });
@@ -711,19 +767,19 @@ const Notifications: React.FC = () => {
 
             // Ordena as mensagens por data de envio (mais recentes primeiro), tratando datas nulas
             const sortedMessages = response.data.sort((a, b) => {
-                 // Datas podem ser string ISO ou null. Converter para timestamp ou 0 se null.
-                 const timeA = a.sendDate ? new Date(a.sendDate).getTime() : 0;
-                 const timeB = b.sendDate ? new Date(b.sendDate).getTime() : 0;
-                 // Se as datas forem iguais (ou ambas 0), pode ordenar por ID (ou data de criação) como secundário
-                 if (timeB === timeA) {
-                     const createTimeA = a.createDate ? new Date(a.createDate).getTime() : 0;
-                     const createTimeB = b.createDate ? new Date(b.createDate).getTime() : 0;
-                     if (createTimeB === createTimeA) {
-                         return b.id - a.id; // ID descendente como último critério
-                     }
-                     return createTimeB - createTimeA; // Data criação descendente
-                 }
-                 return timeB - timeA; // Data envio descendente
+                // Datas podem ser string ISO ou null. Converter para timestamp ou 0 se null.
+                const timeA = a.sendDate ? new Date(a.sendDate).getTime() : 0;
+                const timeB = b.sendDate ? new Date(b.sendDate).getTime() : 0;
+                // Se as datas forem iguais (ou ambas 0), pode ordenar por ID (ou data de criação) como secundário
+                if (timeB === timeA) {
+                    const createTimeA = a.createDate ? new Date(a.createDate).getTime() : 0;
+                    const createTimeB = b.createDate ? new Date(b.createDate).getTime() : 0;
+                    if (createTimeB === createTimeA) {
+                        return b.id - a.id; // ID descendente como último critério
+                    }
+                    return createTimeB - createTimeA; // Data criação descendente
+                }
+                return timeB - timeA; // Data envio descendente
             });
 
             setMessagesToShowInModal(sortedMessages);
@@ -740,33 +796,43 @@ const Notifications: React.FC = () => {
         } finally {
             setIsLoadingMessages(false); // Termina o loading, quer sucesso ou erro
         }
-    }, [FULL_API_BASE_URL]); // Dependências da função
+    }, []); // Removido FULL_API_BASE_URL
 
     // --- Estados Derivados e Cálculos Auxiliares ---
 
     // Filtra clientes para o autocomplete (excluindo já selecionados)
     const filteredClients = useMemo(() => {
         if (!clientSearchTerm || editingGroupKey) return []; // Não filtra se não houver termo ou estiver editando
+
         const selectedIds = new Set(selectedClients.map(c => c.id));
-        const termLower = clientSearchTerm.toLowerCase();
+
+        const normalizedSearchTerm = normalize(clientSearchTerm);
+
         return allClients
-            .filter(c =>
-                !selectedIds.has(c.id) && // Exclui já selecionados
-                (c.name.toLowerCase().includes(termLower) || c.nif.toString().includes(termLower)) // Busca por nome ou NIF
-            )
+            .filter(c => {
+                const normalizedClientName = normalize(c.name);
+                return (
+                    !selectedIds.has(c.id) && // Exclui já selecionados
+                    (
+                        normalizedClientName.includes(normalizedSearchTerm) || // Compara nomes normalizados
+                        c.nif.toString().includes(normalizedSearchTerm) // Mantém pesquisa por NIF
+                    )
+                );
+            })
             .slice(0, 10); // Limita a 10 resultados
-    }, [clientSearchTerm, allClients, selectedClients, editingGroupKey]);
+    }, [clientSearchTerm, allClients, selectedClients, editingGroupKey]); // normalize é estável
 
     // Indica se alguma operação assíncrona principal está em andamento
     const isSubmittingForm = createLoading; // Alias para clareza
-    const isAnyLoading = isSubmittingForm || isDeleting || isTogglingStatus || isLoadingMessages || isRefreshingData;
+    // *** ATUALIZADO: Adicionar isForcingSend ***
+    const isAnyLoading = isSubmittingForm || isDeleting || isTogglingStatus || isLoadingMessages || isRefreshingData || isForcingSend;
 
     // --- Funções Auxiliares de Formatação ---
     const formatDateTime = (isoString: string | null): string => {
         if (!isoString) return 'N/D';
         try {
             const date = new Date(isoString);
-             if (isNaN(date.getTime())) return 'Data Inválida'; // Verifica se a data é válida
+            if (isNaN(date.getTime())) return 'Data Inválida'; // Verifica se a data é válida
             // Usar hourCycle para garantir formato 24h consistente
             return `${date.toLocaleDateString('pt-PT')} ${date.toLocaleTimeString('pt-PT', { hourCycle: 'h23' })}`;
         } catch (e) {
@@ -775,31 +841,31 @@ const Notifications: React.FC = () => {
         }
     };
     const formatDate = (dateString: string | null): string => {
-         if (!dateString) return 'N/D';
-         try {
-             // Tenta criar data a partir de YYYY-MM-DD ou outros formatos ISO
-             const date = new Date(dateString);
-             // Verifica se é uma data válida e não o início da época (que indica possível erro de parse)
-             if (isNaN(date.getTime()) || date.getTime() === 0) {
-                  // Tentar parse manual para YYYY-MM-DD se falhou
-                 const parts = dateString.split('-');
-                 if (parts.length === 3) {
-                     const year = parseInt(parts[0]);
-                     const month = parseInt(parts[1]) - 1; // Mês é 0-indexado
-                     const day = parseInt(parts[2]);
-                     if (!isNaN(year) && !isNaN(month) && !isNaN(day)) {
-                         const utcDate = new Date(Date.UTC(year, month, day));
-                         if (!isNaN(utcDate.getTime())) {
-                             return utcDate.toLocaleDateString('pt-PT', { timeZone: 'UTC' });
-                         }
-                     }
-                 }
-                 return 'Data Inválida'; // Retorna se inválido
-             }
-             // Se a data for válida, formata em UTC para evitar problemas de fuso horário apenas com data
-             return date.toLocaleDateString('pt-PT', { timeZone: 'UTC' });
+        if (!dateString) return 'N/D';
+        try {
+            // Tenta criar data a partir de YYYY-MM-DD ou outros formatos ISO
+            const date = new Date(dateString);
+            // Verifica se é uma data válida e não o início da época (que indica possível erro de parse)
+            if (isNaN(date.getTime()) || date.getTime() === 0) {
+                // Tentar parse manual para YYYY-MM-DD se falhou
+                const parts = dateString.split('-');
+                if (parts.length === 3) {
+                    const year = parseInt(parts[0]);
+                    const month = parseInt(parts[1]) - 1; // Mês é 0-indexado
+                    const day = parseInt(parts[2]);
+                    if (!isNaN(year) && !isNaN(month) && !isNaN(day)) {
+                        const utcDate = new Date(Date.UTC(year, month, day));
+                        if (!isNaN(utcDate.getTime())) {
+                            return utcDate.toLocaleDateString('pt-PT', { timeZone: 'UTC' });
+                        }
+                    }
+                }
+                return 'Data Inválida'; // Retorna se inválido
+            }
+            // Se a data for válida, formata em UTC para evitar problemas de fuso horário apenas com data
+            return date.toLocaleDateString('pt-PT', { timeZone: 'UTC' });
         } catch (e) {
-             console.error("Erro ao formatar data:", dateString, e);
+            console.error("Erro ao formatar data:", dateString, e);
             return dateString; // Retorna original se falhar
         }
     }
@@ -811,7 +877,7 @@ const Notifications: React.FC = () => {
     }
     // Mostra erro grave se a busca inicial de configs falhou e não há dados
     if (configsError && !originalConfigs.length && !configsLoading) {
-         // Verifica se o erro é de autenticação (401 ou 403) - pode necessitar ajuste consoante a API
+        // Verifica se o erro é de autenticação (401 ou 403) - pode necessitar ajuste consoante a API
         const statusCode = (configsError as unknown as AxiosError)?.response?.status;
         const errorMsg = statusCode === 401 || statusCode === 403
             ? "Não autorizado. Verifique a sua sessão."
@@ -888,7 +954,7 @@ const Notifications: React.FC = () => {
                                             : currentEditingGroupObject.clients.filter(c => c !== null).length === 1 && currentEditingGroupObject.clients.find(c => c !== null)
                                                 ? `${currentEditingGroupObject.clients.find(c => c !== null)?.name} (NIF: ${currentEditingGroupObject.clients.find(c => c !== null)?.nif}) (Configuração Individual)`
                                                 : `${currentEditingGroupObject.clients.filter(c => c !== null).length} clientes específicos (Configuração Agrupada)`}
-                                         <small className="info-edit" style={{display:'block', marginTop:'5px'}}>Os destinatários não podem ser alterados na edição de grupo/configuração.</small>
+                                        <small className="info-edit" style={{ display: 'block', marginTop: '5px' }}>Os destinatários não podem ser alterados na edição de grupo/configuração.</small>
                                     </div>
                                 ) : (
                                     // Interface de seleção de cliente no modo de criação
@@ -908,7 +974,7 @@ const Notifications: React.FC = () => {
                                                         value={clientSearchTerm}
                                                         onChange={handleClientSearchChange}
                                                         onFocus={() => clientSearchTerm.length > 0 && setShowClientDropdown(true)}
-                                                         onBlur={() => setTimeout(() => setShowClientDropdown(false), 150)} // Pequeno delay para permitir clique no dropdown
+                                                        onBlur={() => setTimeout(() => setShowClientDropdown(false), 150)} // Pequeno delay para permitir clique no dropdown
                                                         autoComplete="off"
                                                         disabled={isAnyLoading}
                                                         aria-label="Pesquisar e adicionar cliente"
@@ -916,11 +982,11 @@ const Notifications: React.FC = () => {
                                                     {showClientDropdown && filteredClients.length > 0 && (
                                                         <ul className="autocomplete-dropdown" role="listbox">
                                                             {filteredClients.map((client) => (
-                                                                <li key={client.id} onClick={() => handleAddClient(client)} onMouseDown={(e)=>e.preventDefault()} /* Evita blur antes do click */ tabIndex={0} role="option" aria-selected="false">{client.name} ({client.nif})</li>
+                                                                <li key={client.id} onClick={() => handleAddClient(client)} onMouseDown={(e) => e.preventDefault()} /* Evita blur antes do click */ tabIndex={0} role="option" aria-selected="false">{client.name} ({client.nif})</li>
                                                             ))}
                                                         </ul>
                                                     )}
-                                                     {showClientDropdown && clientSearchTerm.length > 0 && filteredClients.length === 0 && !clientsLoading && (
+                                                    {showClientDropdown && clientSearchTerm.length > 0 && filteredClients.length === 0 && !clientsLoading && (
                                                         <div className="autocomplete-no-results">Nenhum cliente encontrado.</div>
                                                     )}
                                                 </div>
@@ -957,7 +1023,7 @@ const Notifications: React.FC = () => {
                                         options={notificationTypeOptions}
                                         className={!editingGroupKey ? "basic-multi-select" : "basic-single-select"} // Estilo diferente se single/multi
                                         classNamePrefix="select"
-                                        placeholder={editingGroupKey ? (formData.selectedNotificationTypeIds.length > 0 ? notificationTypeOptions.find(o=>o.value === formData.selectedNotificationTypeIds[0])?.label : "Tipo (Fixo)") : "Selecione o(s) tipo(s)..."}
+                                        placeholder={editingGroupKey ? (formData.selectedNotificationTypeIds.length > 0 ? notificationTypeOptions.find(o => o.value === formData.selectedNotificationTypeIds[0])?.label : "Tipo (Fixo)") : "Selecione o(s) tipo(s)..."}
                                         aria-labelledby="label-notif-type"
                                         onChange={(options) => handleSelectChange('selectedNotificationTypeIds', options as MultiValue<SelectOption> | SingleValue<SelectOption>)}
                                         value={!editingGroupKey
@@ -980,7 +1046,7 @@ const Notifications: React.FC = () => {
                                         isLoading={taxTypesLoading && taxTypeOptions.length === 0} // Mostra loading se estiver carregando e não houver opções ainda
                                         className={!editingGroupKey ? "basic-multi-select" : "basic-single-select"}
                                         classNamePrefix="select"
-                                        placeholder={editingGroupKey ? (formData.selectedTaxTypeIds.length > 0 ? taxTypeOptions.find(o=>o.value === formData.selectedTaxTypeIds[0])?.label : "Imposto (Fixo)") : "Selecione o(s) imposto(s)..."}
+                                        placeholder={editingGroupKey ? (formData.selectedTaxTypeIds.length > 0 ? taxTypeOptions.find(o => o.value === formData.selectedTaxTypeIds[0])?.label : "Imposto (Fixo)") : "Selecione o(s) imposto(s)..."}
                                         aria-labelledby="label-tax-type"
                                         onChange={(options) => handleSelectChange('selectedTaxTypeIds', options as MultiValue<SelectOption> | SingleValue<SelectOption>)}
                                         value={!editingGroupKey
@@ -991,7 +1057,7 @@ const Notifications: React.FC = () => {
                                         isDisabled={!!editingGroupKey || isAnyLoading || taxTypesLoading} // Desabilitado na edição ou enquanto carrega
                                         noOptionsMessage={() => taxTypesLoading ? 'A carregar impostos...' : 'Nenhum imposto encontrado'}
                                     />
-                                     {taxTypesError && !taxTypesLoading && <small className="error">Erro ao carregar impostos.</small>}
+                                    {taxTypesError && !taxTypesLoading && <small className="error">Erro ao carregar impostos.</small>}
                                     {editingGroupKey && <small className="info-edit">O Imposto não pode ser alterado na edição.</small>}
                                 </div>
                             </fieldset>
@@ -1040,12 +1106,6 @@ const Notifications: React.FC = () => {
                                     id="notif-submit-button"
                                     type="submit"
                                     className="button-primary"
-                                    // Desabilitar se: a) alguma operação estiver em curso, OU
-                                    // b) estiver criando, modo individual e sem clientes selecionados, OU
-                                    // c) estiver criando e sem tipo de notificação, OU
-                                    // d) estiver criando e sem tipo de imposto, OU
-                                    // e) frequência não definida, OU
-                                    // f) período inválido
                                     disabled={isAnyLoading ||
                                         (!editingGroupKey && clientSelectionMode === 'individual' && selectedClients.length === 0) ||
                                         (!editingGroupKey && formData.selectedNotificationTypeIds.length === 0) ||
@@ -1123,46 +1183,43 @@ const Notifications: React.FC = () => {
                                                     <td colSpan={7} className="no-data">
                                                         Nenhuma configuração encontrada
                                                         {filterStatus !== 'all' ? ` com o estado '${filterStatus === 'active' ? 'Ativo' : 'Inativo'}'` : ''}.
-                                                        {/* Botão para limpar filtro se houver configs em outros estados */}
                                                         {groupedConfigs.length > 0 && filterStatus !== 'all' &&
-                                                            <button onClick={() => setFilterStatus('all')} className="link-button" style={{marginLeft:'10px'}}>Mostrar todos</button>
+                                                            <button onClick={() => setFilterStatus('all')} className="link-button" style={{ marginLeft: '10px' }}>Mostrar todos</button>
                                                         }
                                                     </td>
                                                 </tr>
                                             )}
                                             {/* Linhas da Tabela */}
                                             {paginatedConfigs.map((group) => {
-                                                // Lógica para exibir destinatários de forma clara
                                                 const specificClients = group.clients.filter((c): c is ApiClient => c !== null);
-                                                const isOnlyGlobal = group.hasGlobalConfig && specificClients.length === 0; // Apenas config global no grupo
-                                                 const isMixed = group.hasGlobalConfig && specificClients.length > 0; // Global + específicos
+                                                const isOnlyGlobal = group.hasGlobalConfig && specificClients.length === 0;
+                                                const isMixed = group.hasGlobalConfig && specificClients.length > 0;
 
                                                 let clientDisplay: React.ReactNode = '';
                                                 if (isOnlyGlobal) {
-                                                     clientDisplay = <span title="Configuração Global"><FontAwesomeIcon icon={faGlobe} /> Todos Clientes</span>;
-                                                } else if (specificClients.length === 1 && !isMixed) { // Apenas 1 cliente específico
+                                                    clientDisplay = <span title="Configuração Global"><FontAwesomeIcon icon={faGlobe} /> Todos Clientes</span>;
+                                                } else if (specificClients.length === 1 && !isMixed) {
                                                     clientDisplay = `${specificClients[0].name} (${specificClients[0].nif})`;
-                                                } else { // Múltiplos clientes específicos ou misto (global + específicos)
+                                                } else {
                                                     const countText = `${specificClients.length} Cliente${specificClients.length !== 1 ? 's' : ''}`;
                                                     const titleText = `Ver ${countText}${isMixed ? ' (e configuração Global)' : ''}`;
-                                                     clientDisplay = (
+                                                    clientDisplay = (
                                                         <button type="button" className="link-button" onClick={() => handleShowClients(group.clients, group)} title={titleText} disabled={isAnyLoading}>
-                                                            {countText} {isMixed && <>(+ <FontAwesomeIcon icon={faGlobe} size="xs"/>)</>}
+                                                            {countText} {isMixed && <>(+ <FontAwesomeIcon icon={faGlobe} size="xs" />)</>}
                                                             <FontAwesomeIcon icon={faUsers} size="xs" style={{ marginLeft: '4px' }} />
                                                         </button>
                                                     );
-                                                 }
-                                                //else clientDisplay = <span className="error">Dados Inválidos</span>; // Caso raro
+                                                }
 
-                                                const unitAbbreviation = (frequencyUnits[group.frequency] || 'dias').substring(0, 1); // 'd', 's', 'm', 't'
-                                                const isCurrentlyProcessingThisGroup = processingGroupId === group.key; // Este grupo está sendo apagado/toggled?
-                                                const isThisGroupCurrentlyBeingEdited = editingGroupKey === group.key; // Este grupo está no form de edição?
+                                                const unitAbbreviation = (frequencyUnits[group.frequency] || 'dias').substring(0, 1);
+                                                const isCurrentlyProcessingThisGroup = processingGroupId === group.key;
+                                                const isThisGroupCurrentlyBeingEdited = editingGroupKey === group.key;
 
                                                 return (
                                                     <tr
                                                         key={group.key}
                                                         className={`${group.active ? '' : 'inactive-row'} ${isThisGroupCurrentlyBeingEdited ? 'editing-row-highlight' : ''}`}
-                                                        aria-rowindex={paginatedConfigs.indexOf(group) + 1 + (currentPage - 1) * ITEMS_PER_PAGE} // Acessibilidade
+                                                        aria-rowindex={paginatedConfigs.indexOf(group) + 1 + (currentPage - 1) * ITEMS_PER_PAGE}
                                                     >
                                                         <td data-label="Destinatário(s)">{clientDisplay}</td>
                                                         <td data-label="Tipo">{group.notificationType?.description || '?'}</td>
@@ -1181,9 +1238,13 @@ const Notifications: React.FC = () => {
                                                             <button onClick={() => handleTableAction('toggle', group)} title={group.active ? 'Desativar este grupo/configuração' : 'Ativar este grupo/configuração'} disabled={isAnyLoading || isThisGroupCurrentlyBeingEdited} className={`action-button toggle ${group.active ? 'toggle-off' : 'toggle-on'}`} aria-label={`${group.active ? 'Desativar' : 'Ativar'} configuração para ${group.taxType?.description}`}>
                                                                 {(isTogglingStatus && isCurrentlyProcessingThisGroup) ? <FontAwesomeIcon icon={faSpinner} spin /> : <FontAwesomeIcon icon={group.active ? faToggleOff : faToggleOn} />}
                                                             </button>
-                                                            {/* Botão Ver Histórico de Mensagens */}
+                                                            {/* Botão Ver Histórico */}
                                                             <button onClick={() => handleShowMessages(group)} title="Ver histórico de mensagens enviadas para este grupo/configuração" disabled={isAnyLoading || isThisGroupCurrentlyBeingEdited} className="action-button view-messages" aria-label={`Ver histórico de mensagens para ${group.taxType?.description}`}>
                                                                 {(isLoadingMessages && groupBeingViewed?.key === group.key) ? <FontAwesomeIcon icon={faSpinner} spin /> : <FontAwesomeIcon icon={faEnvelopeOpen} />}
+                                                            </button>
+                                                            {/* *** NOVO BOTÃO: Forçar Envio *** */}
+                                                            <button onClick={() => handleForceSend(group)} title="Forçar envio imediato das notificações deste grupo" disabled={isAnyLoading || isThisGroupCurrentlyBeingEdited || !group.active} className="action-button force-send" aria-label={`Forçar envio para ${group.taxType?.description}`}>
+                                                                {(isForcingSend && isCurrentlyProcessingThisGroup) ? <FontAwesomeIcon icon={faSpinner} spin /> : <FontAwesomeIcon icon={faPaperPlane} />}
                                                             </button>
                                                             {/* Botão Apagar */}
                                                             <button onClick={() => handleTableAction('delete', group)} title="Apagar este grupo/configuração" disabled={isAnyLoading || isThisGroupCurrentlyBeingEdited} className="action-button delete" aria-label={`Apagar configuração para ${group.taxType?.description}`}>
@@ -1216,7 +1277,7 @@ const Notifications: React.FC = () => {
 
             {/* --- Modais --- */}
 
-            {/* Modal: Lista de Clientes Específicos (quando clicado no botão de múltiplos clientes) */}
+            {/* Modal: Lista de Clientes Específicos */}
             {isClientModalOpen && (
                 <div className="modal-overlay" onClick={() => setIsClientModalOpen(false)}>
                     <div className="modal-content" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-labelledby="client-modal-title">
@@ -1232,7 +1293,6 @@ const Notifications: React.FC = () => {
                         <div className="modal-body">
                             {clientsToShowInModal.filter(c => c !== null).length > 0 ? (
                                 <ul className="client-modal-list">
-                                    {/* Mostra apenas os clientes não nulos */}
                                     {clientsToShowInModal.filter((c): c is ApiClient => c !== null).map((client) => (
                                         <li key={client.id}>{client.name} (NIF: {client.nif})</li>
                                     ))}
@@ -1240,15 +1300,14 @@ const Notifications: React.FC = () => {
                             ) : (
                                 <p>Não há clientes específicos associados a esta configuração (pode ser apenas Global).</p>
                             )}
-                             {/* Indica se existe config global também */}
-                             {clientsToShowInModal.some(c => c === null) &&
-                                <p style={{marginTop:'10px', fontStyle:'italic', fontSize:'0.9em'}}>
-                                    <FontAwesomeIcon icon={faGlobe}/> Esta configuração também se aplica globalmente a todos os outros clientes.
+                            {clientsToShowInModal.some(c => c === null) &&
+                                <p style={{ marginTop: '10px', fontStyle: 'italic', fontSize: '0.9em' }}>
+                                    <FontAwesomeIcon icon={faGlobe} /> Esta configuração também se aplica globalmente a todos os outros clientes.
                                 </p>
-                             }
+                            }
                         </div>
-                         <div className="modal-footer">
-                             <button onClick={() => setIsClientModalOpen(false)} className="button-secondary">Fechar</button>
+                        <div className="modal-footer">
+                            <button onClick={() => setIsClientModalOpen(false)} className="button-secondary">Fechar</button>
                         </div>
                     </div>
                 </div>
@@ -1278,12 +1337,11 @@ const Notifications: React.FC = () => {
                             {messageFetchError && !isLoadingMessages && (
                                 <div className="notification-message error" style={{ margin: '10px 0' }} role="alert">
                                     <FontAwesomeIcon icon={faExclamationTriangle} /> Erro ao carregar: {messageFetchError}
-                                    {/* Botão Tentar Novamente (só aparece se houver erro) */}
                                     {groupBeingViewed &&
                                         <button onClick={() => handleShowMessages(groupBeingViewed)} style={{ marginLeft: '15px' }} className="button-secondary">
-                                            <FontAwesomeIcon icon={faRedo}/> Tentar Novamente
+                                            <FontAwesomeIcon icon={faRedo} /> Tentar Novamente
                                         </button>
-                                     }
+                                    }
                                 </div>
                             )}
                             {/* Estado Vazio */}
@@ -1293,7 +1351,7 @@ const Notifications: React.FC = () => {
                             {/* Tabela de Mensagens */}
                             {!isLoadingMessages && !messageFetchError && messagesToShowInModal.length > 0 && (
                                 <div className="messages-history-table-container">
-                                   <table className="messages-history-table">
+                                    <table className="messages-history-table">
                                         <thead>
                                             <tr>
                                                 <th>Cliente</th>
@@ -1302,7 +1360,6 @@ const Notifications: React.FC = () => {
                                                 <th>Título</th>
                                                 <th>Mensagem</th>
                                                 <th>Data Criação</th>
-                                                {/* <th>ID Msg</th> */}
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -1317,21 +1374,17 @@ const Notifications: React.FC = () => {
                                                             (() => {
                                                                 const detailsHtmlContent = extractDetailsDivHtml(msg.message);
                                                                 if (detailsHtmlContent) {
-                                                                    // Renderiza a div.details extraída
                                                                     return <div dangerouslySetInnerHTML={{ __html: detailsHtmlContent }} />;
                                                                 } else {
-                                                                    // Fallback: se não encontrou .details, mostra o texto da mensagem completa (sem tags) e abreviado
                                                                     const fallbackText = msg.message?.replace(/<[^>]+>/g, '') || ''; // Remove tags HTML
                                                                     return fallbackText.length > 150 ? `${fallbackText.substring(0, 147)}...` : fallbackText;
                                                                 }
                                                             })()
                                                         ) : (
-                                                            // Para SMS ou outros tipos, mantém como texto simples abreviado
                                                             msg.message?.length > 150 ? `${msg.message.substring(0, 147)}...` : msg.message
                                                         )}
                                                     </td>
-                                                     <td data-label="Data Criação">{formatDate(msg.createDate)}</td>
-                                                    {/* <td data-label="ID Msg">{msg.id}</td> */}
+                                                    <td data-label="Data Criação">{formatDate(msg.createDate)}</td>
                                                 </tr>
                                             ))}
                                         </tbody>
@@ -1339,8 +1392,8 @@ const Notifications: React.FC = () => {
                                 </div>
                             )}
                         </div>
-                         <div className="modal-footer">
-                             <button onClick={() => setIsMessagesModalOpen(false)} className="button-secondary">Fechar</button>
+                        <div className="modal-footer">
+                            <button onClick={() => setIsMessagesModalOpen(false)} className="button-secondary">Fechar</button>
                         </div>
                     </div>
                 </div>
