@@ -184,6 +184,12 @@ const Notifications: React.FC = () => {
     const [modalGroupInfoForMessages, setModalGroupInfoForMessages] = useState<{ tax?: string, freq?: string, period?: number, type?: string } | null>(null);
     const [groupBeingViewed, setGroupBeingViewed] = useState<GroupedConfig | null>(null); // Para referência no modal de mensagens
 
+    const [messagesApiEndpoint, setMessagesApiEndpoint] = useState<string | null>(null);
+    const [fetchMessagesEnabled, setFetchMessagesEnabled] = useState<boolean>(false);
+    const [messagesRefreshTrigger, setMessagesRefreshTrigger] = useState(0); // <<< NOVO ESTADO
+
+
+
     // --- Hooks de Fetch de Dados ---
     const { data: allClientsData, loading: clientsLoading, error: clientsError } = useApi<Client[]>(`atmate-gateway/clients/getClients?refresh=${refreshTrigger}`, { enabled: true });
     const allClients = useMemo(() => allClientsData || [], [allClientsData]);
@@ -194,6 +200,18 @@ const Notifications: React.FC = () => {
 
     const { data: existingConfigsResponse, loading: configsLoading, error: configsError } = useApi<ApiNotificationConfig[]>(`atmate-gateway/notification/getNotificationConfig?refresh=${refreshTrigger}`, { enabled: true });
     const originalConfigs = useMemo(() => existingConfigsResponse || [], [existingConfigsResponse]);
+
+    const {
+        data: fetchedMessagesData, // Nome distinto para os dados das mensagens
+        loading: messagesApiLoading, // Nome distinto para o estado de loading
+        error: messagesApiError,     // Nome distinto para o estado de erro
+    } = useApi<ClientNotification[]>(
+        messagesApiEndpoint || '', // Endpoint virá do estado messagesApiEndpoint
+        {
+            method: 'GET',
+            enabled: fetchMessagesEnabled, // Controlado pelo estado fetchMessagesEnabled
+        }
+    );
 
     // --- Processamento e Agrupamento de Dados ---
     const groupedConfigs = useMemo<GroupedConfig[]>(() => {
@@ -336,6 +354,55 @@ const Notifications: React.FC = () => {
     useEffect(() => {
         setCurrentPage(1);
     }, [filterStatus]);
+
+    useEffect(() => {
+        if (fetchMessagesEnabled) {
+            if (messagesApiLoading) {
+                setIsLoadingMessages(true);
+                setMessageFetchError(null);
+                setMessagesToShowInModal([]);
+            } else if (messagesApiError) {
+                setIsLoadingMessages(false);
+                let msg = "Erro ao carregar histórico de mensagens.";
+                if (axios.isAxiosError(messagesApiError as any)) {
+                    const axiosErr = messagesApiError as unknown as AxiosError<ApiResponseData>;
+                    msg = axiosErr.response?.data?.message || axiosErr.response?.data?.error || axiosErr.message;
+                } else if (messagesApiError instanceof Error) {
+                    msg = messagesApiError.message;
+                } else if (typeof messagesApiError === 'string') {
+                    msg = messagesApiError;
+                }
+                setMessageFetchError(msg);
+                setMessagesToShowInModal([]);
+            } else if (fetchedMessagesData) {
+                setIsLoadingMessages(false);
+                setMessageFetchError(null);
+                const sortedMessages = [...fetchedMessagesData].sort((a, b) => {
+                    // ... sua lógica de ordenação ...
+                    const timeA = a.sendDate ? new Date(a.sendDate).getTime() : 0;
+                    const timeB = b.sendDate ? new Date(b.sendDate).getTime() : 0;
+                    if (timeB === timeA) {
+                        const createTimeA = a.createDate ? new Date(a.createDate).getTime() : 0;
+                        const createTimeB = b.createDate ? new Date(b.createDate).getTime() : 0;
+                        if (createTimeB === createTimeA) {
+                            const idA = a.id;
+                            const idB = b.id;
+                            if (typeof idA === 'number' && typeof idB === 'number') {
+                                return idB - idA;
+                            }
+                            return String(idB).localeCompare(String(idA));
+                        }
+                        return createTimeB - createTimeA;
+                    }
+                    return timeB - timeA;
+                });
+                setMessagesToShowInModal(sortedMessages);
+            } else {
+                setIsLoadingMessages(false);
+            }
+        }
+    }, [fetchedMessagesData, messagesApiLoading, messagesApiError, fetchMessagesEnabled]);
+    
 
     // --- Handlers de Eventos do Formulário ---
 
@@ -737,66 +804,52 @@ const Notifications: React.FC = () => {
         setIsClientModalOpen(true);
     }, []);
 
-    // --- Nova Função para buscar e mostrar mensagens ---
-    const handleShowMessages = useCallback(async (group: GroupedConfig) => {
+    // --- Nova Função para buscar e mostrar mensagens ---// --- Nova Função para buscar e mostrar mensagens ---
+    const handleShowMessages = useCallback((group: GroupedConfig) => { // Removido async, não é mais necessário aqui
         if (!group || !group.originalIds || group.originalIds.length === 0) {
             setNotificationMessage({ type: 'error', text: 'Grupo inválido ou sem IDs de configuração associados.' });
             return;
         }
 
-        setGroupBeingViewed(group); // Guarda o grupo para referência (ex: botão Tentar Novamente)
+        setGroupBeingViewed(group); // Guarda o grupo para referência
         setIsMessagesModalOpen(true);
-        setIsLoadingMessages(true);
-        setMessageFetchError(null);
-        setMessagesToShowInModal([]); // Limpa mensagens anteriores
-        setModalGroupInfoForMessages({ // Define info para o título do modal
+        // setIsLoadingMessages(true); // O loading será agora derivado de messagesApiLoading
+        setMessageFetchError(null);    // Limpa erro anterior específico do modal
+        setMessagesToShowInModal([]);  // Limpa mensagens anteriores do modal
+
+        setModalGroupInfoForMessages({
             tax: group.taxType?.description,
             freq: group.frequency,
             period: group.startPeriod,
             type: group.notificationType?.description
         });
 
-        try {
-            // O endpoint /getNotifications espera os IDs das *configurações* (ClientNotificationConfig)
-            const configIds = group.originalIds;
-            const params = new URLSearchParams();
-            configIds.forEach(id => params.append('ids', id.toString())); // Cria ?ids=1&ids=2&ids=3...
+        const newRefreshTrigger = Date.now(); // Ou pode ser um contador: messagesRefreshTrigger + 1
+        // setMessagesRefreshTrigger(newRefreshTrigger); // Atualiza o estado se for usar um contador incremental. Usar Date.now() direto no endpoint também funciona.
 
-            // Faz a chamada GET
-            const response = await axios.get<ClientNotification[]>(`${FULL_API_BASE_URL}atmate-gateway/notification/getNotifications`, { params });
 
-            // Ordena as mensagens por data de envio (mais recentes primeiro), tratando datas nulas
-            const sortedMessages = response.data.sort((a, b) => {
-                // Datas podem ser string ISO ou null. Converter para timestamp ou 0 se null.
-                const timeA = a.sendDate ? new Date(a.sendDate).getTime() : 0;
-                const timeB = b.sendDate ? new Date(b.sendDate).getTime() : 0;
-                // Se as datas forem iguais (ou ambas 0), pode ordenar por ID (ou data de criação) como secundário
-                if (timeB === timeA) {
-                    const createTimeA = a.createDate ? new Date(a.createDate).getTime() : 0;
-                    const createTimeB = b.createDate ? new Date(b.createDate).getTime() : 0;
-                    if (createTimeB === createTimeA) {
-                        return b.id - a.id; // ID descendente como último critério
-                    }
-                    return createTimeB - createTimeA; // Data criação descendente
-                }
-                return timeB - timeA; // Data envio descendente
-            });
+        // O endpoint /getNotifications espera os IDs das *configurações* (ClientNotificationConfig)
+        const configIds = group.originalIds;
+        const params = new URLSearchParams();
+        configIds.forEach(id => params.append('ids', String(id))); // Usa String(id) para garantir
 
-            setMessagesToShowInModal(sortedMessages);
-
-        } catch (err) {
-            console.error("Erro ao buscar histórico de mensagens:", err);
-            let msg = "Erro ao carregar histórico de mensagens.";
-            if (axios.isAxiosError(err)) {
-                msg = err.response?.data?.message || err.response?.data?.error || err.message;
-            } else if (err instanceof Error) {
-                msg = err.message;
-            }
-            setMessageFetchError(msg);
-        } finally {
-            setIsLoadingMessages(false); // Termina o loading, quer sucesso ou erro
+        const queryString = params.toString();
+        // Adiciona o trigger ao endpoint para garantir unicidade da cacheKey
+        // Usar Date.now() garante uma string diferente a cada vez.
+        // Se queryStringFromIds já existir, anexa com '&', senão com '?'.
+        // Se o seu endpoint base já puder ter query params, ajuste a lógica de '?' vs '&'.
+        let relativeEndpoint = `atmate-gateway/notification/getNotifications`;
+        if (queryString) {
+            relativeEndpoint += `?${queryString}&_refresh=${newRefreshTrigger}`;
+        } else {
+            relativeEndpoint += `?_refresh=${newRefreshTrigger}`; // Caso não haja IDs, ainda assim refresca
         }
-    }, []); // Removido FULL_API_BASE_URL
+
+        // Define o endpoint e ativa o useApi dedicado para as mensagens
+        setMessagesApiEndpoint(relativeEndpoint);
+        setFetchMessagesEnabled(true);
+
+    }, []); // Adicione quaisquer outras dependências estáveis se necessário (ex: setNotificationMessage, etc.)
 
     // --- Estados Derivados e Cálculos Auxiliares ---
 
