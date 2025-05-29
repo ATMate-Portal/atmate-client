@@ -1,22 +1,16 @@
-import { useState } from "react";
-import "./App.css";
+// App.tsx
+import "./App.css"; // Mantém os teus estilos globais
 import { BrowserRouter } from "react-router-dom";
-import Router from "./routes/Router";
-import Sidebar from './components/layout/Sidebar';
-
-
+import AppRouter from "./routes/Router"; // Renomeado para AppRouter para clareza, ou mantém Router se preferires
+import { AuthProvider } from "./api/AuthContext"; // Ajusta o caminho para o teu AuthContext
 
 function App() {
   return (
-<BrowserRouter>
-  <div className="app-wrapper">
-    <Sidebar />
-    <main className="app-main">
-      <Router />
-    </main>
-  </div>
-</BrowserRouter>
-
+    <AuthProvider> {/* AuthProvider envolve tudo que precisa do contexto de autenticação */}
+      <BrowserRouter>
+        <AppRouter /> {/* O teu componente Router que contém as definições de <Routes> */}
+      </BrowserRouter>
+    </AuthProvider>
   );
 }
 
