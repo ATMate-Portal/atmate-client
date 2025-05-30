@@ -7,7 +7,7 @@ import {
     faArrowLeft, faMapMarkerAlt, faPhone, faFileInvoiceDollar,
     faUser, faIdCard, faCalendar, faGlobe, faBuilding, faSpinner,
     faExclamationTriangle, faSyncAlt, faTrashAlt,
-    faChevronDown
+    faChevronDown, faBell
 } from '@fortawesome/free-solid-svg-icons';
 
 // Importar o CSS encapsulado
@@ -17,7 +17,8 @@ import './ClientProfilePage.css';
 interface AddressDTO { id: number; street: string; doorNumber: string; zipCode: string; city: string; county: string; district: string; parish: string; country: string; addressTypeName: string; }
 interface ContactDTO { id: number; contactTypeName: string; contact: string; description: string; }
 interface TaxDTO { identificadorUnico: string; tipo: string; dataLimite: string; clientName: string; valor: string; estado: string; json: string; }
-interface ClientDetails { id: number; name: string; nif: number; gender: string; nationality: string; associatedColaborator: string; birthDate: string; addresses: AddressDTO[]; contacts: ContactDTO[]; taxes: TaxDTO[]; }
+interface NotificationDTO { clientId: number; notificationType: string; taxType: string; status: string; title: string; message: string; sendDate: string; }
+interface ClientDetails { id: number; name: string; nif: number; gender: string; nationality: string; associatedColaborator: string; birthDate: string; addresses: AddressDTO[]; contacts: ContactDTO[]; taxes: TaxDTO[]; notifications: NotificationDTO[];}
 
 // --- Configuração ---
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
@@ -50,6 +51,40 @@ export default function ClientProfilePage() {
     const handleModalOpen = useCallback(() => setIsTaxModalOpen(true), []);
     const handleModalClose = useCallback(() => setIsTaxModalOpen(false), []);
 
+    // Função para formatar data e hora (similar ao seu formatDateTime)
+    const formatDateTimeForTable = (dateString: string | null): string => {
+        if (!dateString) return 'N/A';
+        try {
+            return new Date(dateString).toLocaleString('pt-PT', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            });
+        } catch (e) {
+            return dateString;
+        }
+    };
+
+    // Função para extrair a <div class="details"> do HTML de um email
+    const extractDetailsDivHtml = (fullHtmlString: string): string | null => {
+        if (!fullHtmlString || typeof fullHtmlString !== 'string') {
+            return null;
+        }
+        try {
+            const tempElement = document.createElement('div');
+            tempElement.innerHTML = fullHtmlString;
+            const detailsDiv = tempElement.querySelector('div.details');
+            if (detailsDiv) {
+            return detailsDiv.outerHTML;
+            }
+            return null;
+        } catch (error) {
+            console.error("Erro ao parsear ou extrair HTML dos detalhes:", error);
+            return null;
+        }
+    };
 
     useEffect(() => {
         if (headerRef.current) {
@@ -260,6 +295,7 @@ export default function ClientProfilePage() {
                                     <a href="#moradas" onClick={(e) => scrollToSection(e, '#moradas')} className={getNavLinkClass('#moradas')}>Moradas</a>
                                     <a href="#contactos" onClick={(e) => scrollToSection(e, '#contactos')} className={getNavLinkClass('#contactos')}>Contactos</a>
                                     <a href="#impostos" onClick={(e) => scrollToSection(e, '#impostos')} className={getNavLinkClass('#impostos')}>Impostos</a>
+                                    <a href="#notifications" onClick={(e) => scrollToSection(e, '#notifications')} className={getNavLinkClass('#notifications')}>Notificações</a>
                                 </>
                             )}
                         </nav>
@@ -388,6 +424,77 @@ export default function ClientProfilePage() {
                                     )}
                                 </div>
                             </section>
+
+                            <section id="notifications" className="profile-section">
+                                    <header className="section-header"> <h2><FontAwesomeIcon icon={faBell} /> Notificações</h2> </header>
+                                        <div className="messages-history-table-container"> {/* Usando classes do seu exemplo */}
+                                            <table className="messages-history-table">
+                                            <thead>
+                                                <tr>
+                                                <th>Cliente (ID)</th>
+                                                <th>Data Envio</th>
+                                                <th>Status</th>
+                                                <th>Título</th>
+                                                <th>Mensagem</th>
+                                                {/* Coluna "Tipo Notif." e "Tipo Imposto" podem ser adicionadas se desejado */}
+                                                {/* Ex: <th>Tipo Notificação</th> */}
+                                                {/* Ex: <th>Tipo Imposto</th> */}
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {client.notifications.length === 0 ? (
+                                                <tr>
+                                                    <td colSpan={5} style={{ textAlign: 'center' }}> {/* Ajuste colSpan conforme o nº de colunas */}
+                                                    Não existem notificações para apresentar.
+                                                    </td>
+                                                </tr>
+                                                ) : (
+                                                client.notifications.map((notification, index) => {
+                                                    let messageContent: React.ReactNode;
+                                                    // Assume-se que notification.notificationType será algo como "Email", "SMS", etc.
+                                                    if (notification.notificationType?.toLowerCase().includes('email')) {
+                                                    const detailsHtml = extractDetailsDivHtml(notification.message);
+                                                    if (detailsHtml) {
+                                                        messageContent = <div dangerouslySetInnerHTML={{ __html: detailsHtml }} />;
+                                                    } else {
+                                                        const fallbackText = notification.message?.replace(/<[^>]+>/g, '').trim() || '';
+                                                        messageContent = (
+                                                        fallbackText.length > 150
+                                                            ? `${fallbackText.substring(0, 147)}...`
+                                                            : fallbackText || "Conteúdo do email indisponível."
+                                                        );
+                                                    }
+                                                    } else {
+                                                    const plainMessage = notification.message || '';
+                                                    messageContent = (
+                                                        plainMessage.length > 150
+                                                        ? `${plainMessage.substring(0, 147)}...`
+                                                        : plainMessage
+                                                    );
+                                                    }
+
+                                                    return (
+                                                    <tr key={notification.clientId + '-' + index}> {/* Chave pode precisar ser mais robusta se houver IDs de notificação */}
+                                                        <td data-label="Cliente (ID)">{notification.clientId}</td>
+                                                        <td data-label="Data Envio">{formatDateTimeForTable(notification.sendDate)}</td>
+                                                        <td data-label="Status">
+                                                        <span className={`status-message ${notification.status?.toLowerCase()}`}>
+                                                            {notification.status || 'N/D'}
+                                                        </span>
+                                                        </td>
+                                                        <td data-label="Título">{notification.title || '-'}</td>
+                                                        <td data-label="Mensagem" className="message-content-cell">
+                                                        {messageContent}
+                                                        </td>
+                                                    </tr>
+                                                    );
+                                                })
+                                                )}
+                                            </tbody>
+                                            </table>
+                                        </div>
+                            </section>            
+
                         </>
                     )}
                 </main>
