@@ -1,4 +1,4 @@
-import React, { Fragment, useEffect, useState, useMemo, useCallback } from 'react';
+import React, { Fragment, useEffect, useState, useMemo, useCallback, useContext } from 'react';
 import './Notifications.css'; // Certifique-se que este CSS existe e contém os estilos adicionados
 import Select, { MultiValue, SingleValue } from 'react-select';
 import axios, { AxiosError } from 'axios';
@@ -12,6 +12,7 @@ import {
     faPaperPlane // Icone adicionado para forçar envio
 } from '@fortawesome/free-solid-svg-icons';
 import useApi from '../hooks/useApi'; // Assume que este hook existe e funciona como esperado
+import { AuthContext } from "../api/AuthContext";
 
 // Assumindo que VITE_API_BASE_URL está definido no seu ambiente .env
 const FULL_API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/'; // Fallback para desenvolvimento local
@@ -147,6 +148,8 @@ const normalize = (str: string) => {
     if (!str) return ""; // Garante que não tenta normalizar null/undefined
     return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 };
+
+const token = localStorage.getItem('authToken');
 
 const Notifications: React.FC = () => {
     // --- Estados ---
@@ -484,7 +487,17 @@ const Notifications: React.FC = () => {
 
         try {
             // Ajuste URL se necessário (ex: /createMany ou o backend trata múltiplos no /create)
-            const response = await axios.post<ApiResponseData>(`${FULL_API_BASE_URL}atmate-gateway/notification/create`, payload);
+                const response = await axios.post<ApiResponseData>(
+                `${FULL_API_BASE_URL}atmate-gateway/notification/create`, // 1. URL
+                payload, // 2. Corpo da requisição (data)
+                    { // 3. Configurações da requisição (AxiosRequestConfig)
+                        headers: {
+                            'Authorization': `Bearer ${token}` // Adiciona o header aqui
+                            // Poderia adicionar outros headers se necessário, por exemplo:
+                            // 'Content-Type': 'application/json', // Axios geralmente define isso automaticamente para POST com objeto JS
+                        }
+                    }
+                );
             setNotificationMessage({ type: 'success', text: response.data?.message || `Configuração(ões) criada(s) com sucesso!` });
             resetFormAndState(); // Limpa form e estados
             setRefreshTrigger(p => p + 1); // Força refresh da lista de configs
@@ -560,7 +573,16 @@ const Notifications: React.FC = () => {
         for (const originalId of idsToUpdate) {
             const finalPayload: UpdateNotificationRequestPayload = { ...payloadBasis };
             try {
-                await axios.put<ApiResponseData>(`${FULL_API_BASE_URL}atmate-gateway/notification/update/${originalId}`, finalPayload);
+                await axios.put<ApiResponseData>(
+                    `${FULL_API_BASE_URL}atmate-gateway/notification/update/${originalId}`, // 1. URL
+                    finalPayload, // 2. Corpo da requisição (data)
+                    { // 3. Configurações da requisição (AxiosRequestConfig)
+                        headers: {
+                            'Authorization': `Bearer ${token}`, // Adiciona o header de autorização
+                            // 'Content-Type': 'application/json', // Axios geralmente define isso para PUT se finalPayload for um objeto
+                        }
+                    }
+                );
                 successCount++;
             } catch (err) {
                 errorCount++;
@@ -683,7 +705,14 @@ const Notifications: React.FC = () => {
             setIsDeleting(true);
             for (const id of idsToProcess) {
                 try {
-                    await axios.delete<ApiResponseData>(`${FULL_API_BASE_URL}atmate-gateway/notification/delete/${id}`);
+                     const response = await axios.delete<ApiResponseData>(
+                        `${FULL_API_BASE_URL}atmate-gateway/notification/delete/${id}`, // 1. URL
+                        { // 2. Configurações da requisição (AxiosRequestConfig)
+                            headers: {
+                                'Authorization': `Bearer ${token}` // Adiciona o header de autorização
+                            }
+                        }
+                    );
                     successCount++;
                 } catch (err) {
                     errorCount++;
@@ -699,7 +728,15 @@ const Notifications: React.FC = () => {
             for (const id of idsToProcess) {
                 const url = `${FULL_API_BASE_URL}atmate-gateway/notification/update/${id}/status?active=${newActiveState}`;
                 try {
-                    await axios.put<ApiResponseData>(url, null);
+                    await axios.put<ApiResponseData>(
+                        url, // 1. URL (já contém os query parameters)
+                        null, // 2. Corpo da requisição (neste caso, é null)
+                        { // 3. Configurações da requisição (AxiosRequestConfig)
+                            headers: {
+                                'Authorization': `Bearer ${token}` // Adiciona o header de autorização
+                            }
+                        }
+                    );
                     successCount++;
                 } catch (err) {
                     errorCount++;
@@ -754,7 +791,15 @@ const Notifications: React.FC = () => {
         for (const id of idsToProcess) {
             try {
                 // Usando POST conforme assumido. Ajuste se o método for PUT ou outro.
-                await axios.post<ApiResponseData>(`${FULL_API_BASE_URL}atmate-gateway/notification/forceSend/${id}`, null); // Envia POST sem corpo
+               await axios.post<ApiResponseData>(
+                    `${FULL_API_BASE_URL}atmate-gateway/notification/forceSend/${id}`, // 1. URL
+                    null, // 2. Corpo da requisição (neste caso, é null)
+                    { // 3. Configurações da requisição (AxiosRequestConfig)
+                        headers: {
+                            'Authorization': `Bearer ${token}` // Adiciona o header de autorização
+                        }
+                    }
+                );
                 successCount++;
             } catch (err) {
                 errorCount++;
