@@ -11,6 +11,8 @@ interface ParamsDTO {
   urgencyDays: string;
 }
 
+const token = localStorage.getItem('authToken');
+
 function Settings() {
   const [warningDays, setWarningDays] = useState('');
   const [urgencyDays, setUrgencyDays] = useState('');
@@ -83,6 +85,7 @@ function Settings() {
       }, {
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
         },
       });
 
