@@ -1,11 +1,10 @@
-// src/routes/router.tsx
 import React, { useContext } from 'react';
-import { Routes, Route, Navigate, Outlet } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 
-// Contexto de Autenticação
-import { AuthContext } from '../api/AuthContext'; // <<< AJUSTA O CAMINHO se necessário
+// Importa o contexto para aceder ao estado de autenticação.
+import { AuthContext } from '../api/AuthContext'; 
 
-// Layouts
+// Importa o layout principal que será usado pelas páginas protegidas.
 import MainLayout from "../components/layout/MainLayout";
 
 // Páginas
@@ -13,24 +12,27 @@ import Home from "../pages/Home";
 import Clients from "../pages/Clients";
 import Taxes from "../pages/Taxes";
 import Settings from "../pages/Settings";
-import LogoutPage from "../pages/Logout"; // Renomeado para LogoutPage para clareza, se for uma página
 import OperationHistory from "../pages/OperationHistory";
 import Notifications from "../pages/Notifications";
 import ClientProfilePage from "../pages/ClientProfilePage";
 import LoginPage from "../pages/LoginPage";
 
-// O componente ProtectedRoute pode ser simplificado ou a sua lógica integrada aqui.
-// Para este exemplo, vamos assumir que a lógica de proteção é gerida diretamente
-// com base no `isAuthenticated` do contexto.
-
-const AppRouter: React.FC = () => { // Renomeado para AppRouter para evitar conflito com Router do react-router-dom
+/**
+ * @component AppRouter
+ * Este componente é responsável por gerir toda a lógica de rotas da aplicação.
+ * Utiliza o estado do `AuthContext` para decidir que página renderizar e para
+ * proteger as rotas que exigem autenticação.
+ */
+const AppRouter: React.FC = () => {
+  // Obtém o estado e as funções do contexto de autenticação.
   const authContext = useContext(AuthContext);
 
-  // Se o AuthContext ainda não foi carregado (raro, mas uma salvaguarda)
+  // Salvaguarda para o caso de o contexto ainda não estar disponível.
   if (!authContext) {
     return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>A inicializar autenticação...</div>;
   }
 
+  // Desestrutura os valores necessários do contexto.
   const { isAuthenticated, isLoading } = authContext;
 
   // Mostrar ecrã de loading enquanto o AuthProvider verifica o estado de autenticação
@@ -55,6 +57,7 @@ const AppRouter: React.FC = () => { // Renomeado para AppRouter para evitar conf
           Se não autenticado, redireciona para /login. */}
       <Route
         element={
+          // Verifica se o utilizador está autenticado.
           isAuthenticated ? <MainLayout /> : <Navigate to="/login" replace />
         }
       >
@@ -72,6 +75,7 @@ const AppRouter: React.FC = () => { // Renomeado para AppRouter para evitar conf
       {/* Rota de Fallback para caminhos não encontrados */}
       <Route
         path="*"
+        // Se o utilizador estiver autenticado, redireciona para a home. Se não, para o login.
         element={<Navigate to={isAuthenticated ? "/" : "/login"} replace />}
       />
     </Routes>

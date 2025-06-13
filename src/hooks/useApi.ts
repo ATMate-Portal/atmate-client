@@ -1,28 +1,50 @@
 import { useState, useEffect, useRef, useContext } from "react"; // <<< ADICIONAR useContext
 import axios, { AxiosRequestConfig } from "axios";
-import { AuthContext } from "../api/AuthContext"; // <<< IMPORTAR O TEU AuthContext (ajusta o caminho)
+// Importa o AuthContext para aceder ao estado de autenticação e às suas funções.
+import { AuthContext } from "../api/AuthContext";
 import { useNavigate } from "react-router-dom";
 
+// A URL base da API, obtida a partir das variáveis de ambiente do Vite.
 const BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
+/**
+ * @interface ApiCallOptions
+ * Define as opções de configuração que podem ser passadas ao hook `useApi`
+ * para customizar a chamada à API.
+ */
 interface ApiCallOptions {
-  method?: "GET" | "POST" | "PUT" | "DELETE";
-  headers?: Record<string, string>;
-  body?: any;
-  enabled?: boolean;
+  method?: "GET" | "POST" | "PUT" | "DELETE"; // O método HTTP a ser utilizado.
+  headers?: Record<string, string>; // Cabeçalhos adicionais para a requisição.
+  body?: any; // O corpo da requisição (para POST, PUT, etc.).
+  enabled?: boolean; // Se 'false', a chamada à API não é executada. Útil para chamadas condicionais.
 }
 
-const useApi = <T,>(endpoint: string, options: ApiCallOptions = {}) => {
+/**
+ * @hook useApi
+ * Um hook customizado para realizar chamadas a uma API de forma declarativa.
+ * Abstrai a lógica de loading, erro, cache e tratamento de autenticação.
+ * @template T - O tipo de dados esperado na resposta da API.
+ * @param {string} endpoint - O caminho do endpoint da API (ex: '/users').
+ * @param {ApiCallOptions} options - Opções para configurar a chamada.
+ * @returns Um objeto com `data`, `loading` e `error`.
+ */
+const useApi = <T>(endpoint: string, options: ApiCallOptions = {}) => {
+  // Estados para gerir o ciclo de vida da requisição.
   const [data, setData] = useState<T | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  // useRef para implementar um sistema de cache simples em memória e evitar requisições repetidas.
   const cache = useRef<Map<string, T>>(new Map());
+  // useRef para controlar a última requisição feita e evitar fetches duplicados.
   const latestRequest = useRef<string | null>(null);
 
-  const authContext = useContext(AuthContext); // <<< USAR O AuthContext
+  // Acesso ao contexto de autenticação e à função de navegação do React Router.
+  const authContext = useContext(AuthContext);
   const navigate = useNavigate();
 
+  // Executa a chamada à API sempre que as suas dependências mudam.
   useEffect(() => {
+    // A chamada só é feita se o hook estiver habilitado (`enabled !== false`) e se houver um endpoint.
     const shouldFetch = options.enabled !== false && endpoint;
     if (!shouldFetch) {
       setData(null);
@@ -31,8 +53,10 @@ const useApi = <T,>(endpoint: string, options: ApiCallOptions = {}) => {
       return;
     }
 
-    const cacheKey = `${endpoint}:${JSON.stringify(options)}`; // Nota: JSON.stringify(options.body) pode ser grande para cacheKey
+    // Cria uma chave única para a cache baseada no endpoint e nas opções da requisição.
+    const cacheKey = `${endpoint}:${JSON.stringify(options)}`;
 
+    // Se os dados já existirem na cache, retorna-os imediatamente.
     if (cache.current.has(cacheKey)) {
       setData(cache.current.get(cacheKey)!);
       setLoading(false);
@@ -40,69 +64,80 @@ const useApi = <T,>(endpoint: string, options: ApiCallOptions = {}) => {
       return;
     }
 
-    if (latestRequest.current === cacheKey && loading) { // Evitar refetch se já estiver a carregar a mesma key
+    // Evita refetch se uma requisição idêntica já estiver em andamento.
+    if (latestRequest.current === cacheKey && loading) {
       return;
     }
     latestRequest.current = cacheKey;
 
     const fetchData = async () => {
       const { method = "GET", body } = options;
-      
-      // Obter o token do AuthContext ou localStorage
-      const token = authContext?.token || localStorage.getItem('authToken');
 
-      // Preparar os headers
+      // Obtém o token do contexto de autenticação para injetar na requisição.
+      const token = authContext?.token || localStorage.getItem("authToken");
+
+      // Prepara os cabeçalhos da requisição.
       const requestHeaders: Record<string, string> = {
-        'Accept': 'application/json', // Header comum para APIs JSON
-        ...(options.headers || {}), // Adiciona headers passados nas options
+        Accept: "application/json",
+        ...(options.headers || {}),
       };
 
+      // Se existir um token, adiciona-o ao cabeçalho de Autorização.
       if (token) {
-        requestHeaders['Authorization'] = `Bearer ${token}`; // <<< ADICIONAR O TOKEN JWT
-      }
-      
-      // Adicionar Content-Type apenas se houver body (geralmente para POST, PUT, PATCH)
-      if (body && !requestHeaders['Content-Type']) {
-        requestHeaders['Content-Type'] = 'application/json';
+        requestHeaders["Authorization"] = `Bearer ${token}`;
       }
 
+      // Adiciona o Content-Type 'application/json' se houver um corpo na requisição.
+      if (body && !requestHeaders["Content-Type"]) {
+        requestHeaders["Content-Type"] = "application/json";
+      }
 
+      // Configuração final do objeto de requisição para o Axios.
       const config: AxiosRequestConfig = {
         method,
         url: `${BASE_URL}${endpoint}`,
-        headers: requestHeaders, // <<< USAR OS HEADERS ATUALIZADOS
+        headers: requestHeaders,
         data: body,
         signal: controller.signal,
       };
 
       try {
         setLoading(true);
-        setError(null); // Limpar erro anterior antes de novo fetch
+        setError(null); 
+
         const response = await axios<T>(config);
+
+        // Em caso de sucesso, guarda a resposta na cache e atualiza o estado.
         cache.current.set(cacheKey, response.data);
         setData(response.data);
       } catch (err: any) {
-        if (axios.isCancel(err)) { // Melhor forma de verificar AbortError com Axios
-            console.log("Request canceled:", err.message);
-            return;
+        if (axios.isCancel(err)) {
+          console.log("Request canceled:", err.message);
+          return;
         }
+
         let errorMessage = err.message || "Erro ao buscar dados da API";
+
         if (err.response) {
-            // O servidor respondeu com um status code fora do range 2xx
-            errorMessage = `Erro ${err.response.status}: ${err.response.data?.message || err.response.data?.error || err.message}`;
-            if ((err.response.status === 401 || err.response.status === 403) && authContext?.logout) {
-                console.warn(`Erro de autenticação/autorização (${err.response.status}). A deslogar...`);
-                // Considera deslogar apenas em 401 (Não Autorizado - token inválido/ausente)
-                // 403 (Proibido) pode significar que o token é válido mas o user não tem permissão
-                // authContext.logout(); // Descomenta com cuidado
-                authContext.logout(); 
-                navigate('/login');
-            }
+          // Trata erros vindos da resposta da API (status code != 2xx).
+          errorMessage = `Erro ${err.response.status}: ${
+            err.response.data?.message ||
+            err.response.data?.error ||
+            err.message
+          }`;
+          // Se o erro for de autenticação (401), desloga o utilizador e redireciona para o login.
+          if ((err.response.status === 401 || err.response.status === 403) && authContext?.logout) {
+            console.warn(
+              `Erro de autenticação/autorização (${err.response.status}). A deslogar...`
+            );
+            authContext.logout();
+            navigate("/login");
+          }
         } else if (err.request) {
-            // O pedido foi feito mas não houve resposta
-            errorMessage = "Sem resposta do servidor. Verifica a tua ligação ou a URL da API.";
+          // O pedido foi feito mas não houve resposta
+          errorMessage = "Sem resposta do servidor. Verifica a tua ligação ou a URL da API.";
         }
-        // Algo aconteceu ao configurar o pedido que despoletou um erro
+
         setError(errorMessage);
         setData(null); // Limpar dados antigos em caso de erro
       } finally {
@@ -110,15 +145,25 @@ const useApi = <T,>(endpoint: string, options: ApiCallOptions = {}) => {
       }
     };
 
+    // AbortController para permitir o cancelamento da requisição se o componente for desmontado.
     const controller = new AbortController();
     fetchData();
 
+    // Função de limpeza: é executada quando o componente é desmontado.
     return () => {
       controller.abort();
       latestRequest.current = null;
     };
-    // Adiciona authContext.token às dependências para refazer o fetch se o token mudar (ex: após login/logout)
-  }, [endpoint, options.method, options.headers, options.body, options.enabled, authContext?.token, authContext?.logout]); // authContext.logout para ESLint
+    // Dependências do useEffect: o efeito será re-executado se alguma destas propriedades mudar.
+  }, [
+    endpoint,
+    options.method,
+    options.headers,
+    options.body,
+    options.enabled,
+    authContext?.token,
+    authContext?.logout,
+  ]); // authContext.logout para ESLint
 
   return { data, loading, error };
 };
