@@ -176,6 +176,9 @@ const OperationHistory: React.FC = () => {
         );
     });
 
+    const startItem = pageData ? (pageData.number * pageData.size) + 1 : 0;
+    const endItem = pageData ? startItem + pageData.numberOfElements - 1 : 0;
+
     const cellStyle = { verticalAlign: 'middle' };
 
     if (loading) return <div className="container mt-5 text-center">A carregar histórico de operações...</div>;
@@ -290,7 +293,9 @@ const OperationHistory: React.FC = () => {
             {pageData && pageData.totalPages > 0 && (
                 <div className="d-flex justify-content-between align-items-center mt-3">
                     <div>
-                        <p className="text-muted mb-0">Mostrando {pageData.numberOfElements} de {pageData.totalElements} operações</p>
+                         <p className="text-muted mb-0">
+                            A mostrar {startItem} - {endItem} de {pageData.totalElements} operações
+                        </p>
                     </div>
                     <div className="d-flex align-items-center">
                         <button className="btn btn-outline-secondary btn-sm me-2" onClick={() => handlePageChange(page - 1)} disabled={pageData.first} aria-label="Página anterior">
