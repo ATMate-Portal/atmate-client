@@ -176,7 +176,9 @@ export default function ClientProfilePage() {
             try {
                 const response = await fetch(`${API_BASE_URL}atmate-gateway/clients/${id}`, {
                     method: 'DELETE',
-                    headers: { 'Content-Type': 'application/json', },
+                    headers: { 'Content-Type': 'application/json', 
+                               'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
+                    },
                 });
                 if (!response.ok) {
                     let errorMsg = `Erro ${response.status}: ${response.statusText}`;
