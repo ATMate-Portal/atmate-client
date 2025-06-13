@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useContext } from "react"; // <<< ADICIONAR useContext
 import axios, { AxiosRequestConfig } from "axios";
 import { AuthContext } from "../api/AuthContext"; // <<< IMPORTAR O TEU AuthContext (ajusta o caminho)
+import { useNavigate } from "react-router-dom";
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -19,6 +20,7 @@ const useApi = <T,>(endpoint: string, options: ApiCallOptions = {}) => {
   const latestRequest = useRef<string | null>(null);
 
   const authContext = useContext(AuthContext); // <<< USAR O AuthContext
+  const navigate = useNavigate();
 
   useEffect(() => {
     const shouldFetch = options.enabled !== false && endpoint;
@@ -93,6 +95,8 @@ const useApi = <T,>(endpoint: string, options: ApiCallOptions = {}) => {
                 // Considera deslogar apenas em 401 (Não Autorizado - token inválido/ausente)
                 // 403 (Proibido) pode significar que o token é válido mas o user não tem permissão
                 // authContext.logout(); // Descomenta com cuidado
+                authContext.logout(); 
+                navigate('/login');
             }
         } else if (err.request) {
             // O pedido foi feito mas não houve resposta

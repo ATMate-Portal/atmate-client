@@ -171,12 +171,7 @@ const LoginPage: React.FC = () => {
             )}
           </button>
         </form>
-        <div className="login-links">
-          <a href="/forgot-password">Esqueceu-se da password?</a>
-        </div>
-        <footer className="login-footer">
-          <p>&copy; {new Date().getFullYear()} ATMate. Todos os direitos reservados.</p>
-        </footer>
+        
       </div>
     </div>
   );
