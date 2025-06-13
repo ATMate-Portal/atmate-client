@@ -32,6 +32,11 @@ interface Operation {
     createdAt: string; // Vem como string (ISO 8601), será convertida para Date
 }
 
+interface UniqueUser {
+    userId: number;
+    username: string;
+}
+
 // Interface Page
 interface Page<T> {
     content: T[];
@@ -74,6 +79,16 @@ const OperationHistory: React.FC = () => {
     const [toDate, setToDate] = useState<Date | null>(null);
     // --- FIM DA ATUALIZAÇÃO ---
 
+    const [uniqueUsersForFilter, setUniqueUsersForFilter] = useState<UniqueUser[]>([]);
+
+    // <<< 1. API para obter a lista de utilizadores únicos baseada nos filtros de data
+    const uniqueUsersApiUrl = `atmate-gateway/operation-history/unique-users?${
+        fromDate ? `startDate=${formatDateForApi(fromDate)}` : ''
+    }${toDate ? `&endDate=${formatDateForApi(toDate)}` : ''}`;
+    
+    // Este hook executa a chamada sempre que a URL (e, portanto, as datas) muda
+    const { data: uniqueUsersData, loading: usersLoading } = useApi<UniqueUser[]>(uniqueUsersApiUrl);
+
     const [estadoFilter, setEstadoFilter] = useState<string>('Todos'); // Mantido, mas não usado na API
     const [filterType, setFilterType] = useState<string>('Todos'); // Mantido, mas não usado na API
 
@@ -93,6 +108,12 @@ const OperationHistory: React.FC = () => {
     // --- FIM DA ATUALIZAÇÃO ---
 
     const { data: pageData, loading, error } = useApi<Page<Operation>>(apiUrl);
+
+    useEffect(() => {
+        if (uniqueUsersData) {
+            setUniqueUsersForFilter(uniqueUsersData);
+        }
+    }, [uniqueUsersData]);
 
     useEffect(() => {
         if (pageData && pageData.content.length > 0) {
@@ -239,10 +260,17 @@ const OperationHistory: React.FC = () => {
                     </div>
 
                     <div>
-                        <select id="userIdFilter" className="form-select form-select-sm" value={filterUserId} onChange={handleUserIdFilterChange} aria-label="Filtrar por utilizador">
-                            <option value="">Utilizadores</option>
-                            {uniqueUserIdsWithUsernames.map(([userId, username]) => (
-                                <option key={userId} value={userId}>{username}</option>
+                        <select 
+                            id="userIdFilter" 
+                            className="form-select form-select-sm" 
+                            value={filterUserId} 
+                            onChange={e => { setFilterUserId(e.target.value); setPage(0); }}
+                            aria-label="Filtrar por utilizador"
+                            disabled={usersLoading} // Desativa enquanto carrega a lista de utilizadores
+                        >
+                            <option value="">{usersLoading ? "A carregar..." : "Utilizadores"}</option>
+                            {uniqueUsersForFilter.map(user => (
+                                <option key={user.userId} value={user.userId}>{user.username}</option>
                             ))}
                         </select>
                     </div>
