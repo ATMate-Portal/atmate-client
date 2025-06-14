@@ -16,36 +16,54 @@ import {
     faSpinner // For loading state
 } from '@fortawesome/free-solid-svg-icons';
 
-// Interface for the basic tax data passed in props.
-// This should match the structure of the tax objects coming from ClientAccordionItem.
+// --- INTERFACES DE DADOS ---
+
+/**
+ * @interface Tax
+ * Define a estrutura de dados básica para um imposto, tal como é recebido nas props.
+ * Esta estrutura é mais simples e é usada para popular a tabela inicial.
+ */
 interface Tax {
-  taxId: number;
-  taxData: string; // The JSON string containing detailed tax information
-  type: number;    // Numeric type from the parent component (e.g., for initial table display)
-  licensePlate: string; // Directly available for quick access if needed
-  amount: string;
-  paymentDeadline: string;
-  daysLeft: number;
+    taxId: number;
+    taxData: string; // O JSON string que contém a informação detalhada do imposto.
+    type: number;    // Tipo numérico do imposto (usado para uma exibição inicial, se necessário).
+    licensePlate: string; // Matrícula, para acesso rápido.
+    amount: string;
+    paymentDeadline: string;
+    daysLeft: number;
 }
 
-// Interface for the structured data used by the modal, parsed from taxData.json
+/**
+ * @interface DetailedTaxModalData
+ * Define a estrutura de dados mais completa que é usada para popular o modal de detalhes.
+ * É construída a partir do processamento do JSON contido em `taxData`.
+ */
 interface DetailedTaxModalData {
-  identificadorUnico: string;
-  tipo: string; // String type (e.g., "IUC", "IMI") from the parsed taxData.json
-  dataLimite: string;
-  clientName?: string; // Optional, as it might not be in taxData
-  valor: string;
-  estado?: string;   // Optional
-  json: string;     // The original taxData JSON string, for the modal's internal parsing logic
-  taxId: number;
+    identificadorUnico: string;
+    tipo: string; // Tipo em formato de texto (ex: "IUC", "IMI").
+    dataLimite: string;
+    clientName?: string; // O nome do cliente pode não estar sempre presente no JSON.
+    valor: string;
+    estado?: string;
+    json: string;     // Guarda o JSON original para ser processado internamente pelo modal.
+    taxId: number;
 }
 
+/**
+ * @interface Props
+ * Define as propriedades que o componente UrgentTaxTable espera receber.
+ */
 interface Props {
-  taxes: Tax[]; // Array of Tax objects, each containing taxData
-  // clientId?: number; // If needed for API call or context (not used in this version)
+    taxes: Tax[]; // Uma lista de impostos a serem exibidos na tabela.
 }
 
-// Helper functions (ideally, these should be in a shared utils file)
+// --- FUNÇÕES HELPER (AUXILIARES) ---
+// Estas funções são idealmente partilhadas num ficheiro de utilitários (utils).
+
+/**
+ * @function formatFieldName
+ * Formata os nomes das chaves do JSON para uma apresentação legível na UI do modal.
+ */
 const formatFieldName = (key: string): string => {
     if (key === 'categoriaIUC') return 'Categoria IUC';
     if (key === 'dataMatricula') return 'Data de Matrícula';
@@ -83,6 +101,10 @@ const formatFieldName = (key: string): string => {
     return formatted;
 };
 
+/**
+ * @function formatValue
+ * Formata os valores do JSON, convertendo booleanos para 'Sim'/'Não'.
+ */
 const formatValue = (value: any): string => {
     const trimmedValue = String(value).trim();
     if (trimmedValue.toLowerCase() === 'true') return 'Sim';
@@ -90,67 +112,82 @@ const formatValue = (value: any): string => {
     return trimmedValue;
 };
 
-const fieldsToExclude = [ // Fields to exclude when generically rendering from JSON
-    'Nif', 'Nif Loc', 'Matricula', 'Data Pais E E E', 'Transporte G O',
-    'Data da primeira matricula', 'Matricula Value', 'data1Matricula',
-    // Also exclude fields that are explicitly handled or part of a sub-object like detalhes_veiculo at the top level of the JSON
-    'type', // String type from JSON, already used for selectedTaxForModal.tipo
-    'Valor Base', // Already used for selectedTaxForModal.valor
-    'Data Limite de Pagamento', // Already used for selectedTaxForModal.dataLimite
-    'Situação da Nota', // Already used for selectedTaxForModal.estado
-    'Cat. IUC', // Part of details_veiculo or specific display logic
-    'clientName' // Already handled if present
+// Lista de campos a serem excluídos da exibição genérica de detalhes no modal.
+const fieldsToExclude = [
+    'Nif', 'Nif Loc', 'Matricula', 'data1Matricula',
+    // Exclui campos que já são tratados de forma explícita ou são parte de sub-objetos.
+    'type', 'Valor Base', 'Data Limite de Pagamento', 'Situação da Nota', 'clientName'
 ];
 
-
+/**
+ * @component UrgentTaxTable
+ * Renderiza uma tabela simplificada com impostos urgentes para um cliente específico.
+ * Inclui um modal para exibir informações detalhadas de cada imposto.
+ */
 const UrgentTaxTable: React.FC<Props> = ({ taxes }) => {
-  const [selectedTaxForModal, setSelectedTaxForModal] = useState<DetailedTaxModalData | null>(null);
-  const [showTaxDetailModal, setShowTaxDetailModal] = useState(false);
-  const [loadingModalDetails, setLoadingModalDetails] = useState(false); // Kept for UX consistency
-  const [modalError, setModalError] = useState<string | null>(null);
-  const [showVehicleDetails, setShowVehicleDetails] = useState(false);
+ // --- ESTADOS DO COMPONENTE ---
+    // Estado para guardar os dados processados do imposto selecionado para o modal.
+    const [selectedTaxForModal, setSelectedTaxForModal] = useState<DetailedTaxModalData | null>(null);
+    // Controla a visibilidade do modal.
+    const [showTaxDetailModal, setShowTaxDetailModal] = useState(false);
+    // Controla o estado de carregamento dentro do modal (para feedback ao utilizador).
+    const [loadingModalDetails, setLoadingModalDetails] = useState(false);
+    // Armazena mensagens de erro que possam ocorrer ao processar os dados para o modal.
+    const [modalError, setModalError] = useState<string | null>(null);
+    // Controla a visibilidade da secção de detalhes do veículo dentro do modal (para IUC).
+    const [showVehicleDetails, setShowVehicleDetails] = useState(false);
 
-  // This function now processes the local taxData string instead of fetching
+    /**
+     * @function processTaxDataForModal
+     * Processa o JSON string de um imposto (`tax.taxData`) e transforma-o numa estrutura
+     * de dados mais rica e consistente (`DetailedTaxModalData`) para ser usada pelo modal.
+     * @param tax - O objeto de imposto da lista de props.
+     * @returns Um objeto `DetailedTaxModalData` pronto para o modal.
+     */
   const processTaxDataForModal = (tax: Tax): DetailedTaxModalData => {
     const parsedJson = JSON.parse(tax.taxData);
 
-    // Construct DetailedTaxModalData from the parsed JSON and the base Tax object
+    // Constrói o objeto de dados detalhados, usando fallbacks para garantir que os campos essenciais são preenchidos.
     return {
-      taxId: tax.taxId,
-      identificadorUnico: parsedJson.Matrícula || // For IUC, from taxData JSON (e.g., "62-BP-58")
-                          parsedJson["Nº Nota Cob."] || // For IMI (key might vary, ensure it matches your JSON)
-                          parsedJson.identificadorUnico || // Generic identifier in JSON
-                          tax.licensePlate || // Fallback to licensePlate from the Tax prop
-                          `REF-${tax.taxId}`, // Ultimate fallback
-      tipo: parsedJson.type || // Prefer string 'type' from taxData JSON (e.g., "IUC")
-            getTaxTypeDescriptionFromNumeric(tax.type), // Fallback to converting numeric type
-      dataLimite: parsedJson["Data Limite de Pagamento"] || tax.paymentDeadline,
-      clientName: parsedJson.clientName, // Will be undefined if not in taxData JSON
-      valor: parsedJson["Valor Base"] || parsedJson.amount || tax.amount,
-      estado: parsedJson["Situação da Nota"] || "Desconhecido",
-      json: tax.taxData, // Pass the original JSON string for the modal's internal parsing of sub-objects
-    };
+            taxId: tax.taxId,
+            identificadorUnico: parsedJson.Matrícula || parsedJson["Nº Nota Cob."] || parsedJson.identificadorUnico || tax.licensePlate || `REF-${tax.taxId}`,
+            tipo: parsedJson.type || getTaxTypeDescriptionFromNumeric(tax.type),
+            dataLimite: parsedJson["Data Limite de Pagamento"] || tax.paymentDeadline,
+            clientName: parsedJson.clientName,
+            valor: parsedJson["Valor Base"] || parsedJson.amount || tax.amount,
+            estado: parsedJson["Situação da Nota"] || "Desconhecido",
+            json: tax.taxData, // Passa o JSON original para o modal poder fazer o seu próprio parse de sub-objetos.
+        };
   };
 
+  /**
+     * @function handleOpenTaxDetailsModal
+     * Chamada quando o botão "Ver Detalhes" é clicado. Prepara e abre o modal.
+     */
   const handleOpenTaxDetailsModal = (tax: Tax) => {
     setLoadingModalDetails(true);
     setShowTaxDetailModal(true);
+    // Reseta os estados anteriores para uma exibição limpa.
     setSelectedTaxForModal(null);
     setShowVehicleDetails(false);
     setModalError(null);
 
     try {
-      // Process the taxData to prepare it for the modal
+      // Processa os dados do imposto para o formato do modal.
       const detailedData = processTaxDataForModal(tax);
       setSelectedTaxForModal(detailedData);
     } catch (error: any) {
-      console.error("Error processing tax data for modal:", error);
+      console.error("Erro ao processar dados do imposto para o modal:", error);
       setModalError("Erro ao processar os dados do imposto para o modal. Verifique o formato do JSON em taxData.");
     } finally {
       setLoadingModalDetails(false);
     }
   };
 
+  /**
+     * @function handleCloseTaxDetailsModal
+     * Fecha o modal e limpa todos os estados relacionados.
+     */
   const handleCloseTaxDetailsModal = () => {
     setShowTaxDetailModal(false);
     setSelectedTaxForModal(null);
@@ -159,39 +196,29 @@ const UrgentTaxTable: React.FC<Props> = ({ taxes }) => {
     setShowVehicleDetails(false);
   };
 
+  // Alterna a visibilidade dos detalhes do veículo (para IUC) no modal.
   const toggleVehicleDetails = () => {
     setShowVehicleDetails(prev => !prev);
   };
 
-  // Converts the numeric type from props to a display string for the table
+  /**
+     * @function getTaxTypeDescriptionFromNumeric
+     * Converte o tipo numérico do imposto (da prop) para uma descrição em texto para a tabela.
+     * Serve como fallback caso o JSON não tenha um campo 'type' em texto.
+     */
   const getTaxTypeDescriptionFromNumeric = (typeNumber: number): string => {
-    // This mapping should align with how numeric types are intended to be displayed initially
-    // The modal will prefer the string 'type' from the parsed taxData.json
     switch (typeNumber) {
-      // Example, assuming your numeric types map like this:
-      // case 1: return "IVA"; (If '1' means IVA)
-      // case 2: return "IRS"; (If '2' means IRS)
-      // case 3: return "IUC"; (If '3' means IUC)
-      // For the provided example, the `taxData.type` is a string "IUC",
-      // but the `Tax` interface in `Home.tsx` has `type: number`.
-      // We need to ensure this function correctly maps the *numeric* type.
-      // The example JSON shows "type": "IUC" in taxData, and the outer Tax object has "type": "IUC" (string).
-      // This suggests the `Tax` interface in `Home.tsx` might actually have `type: string` or `tax.type` in `ClientAccordionItem`
-      // is already the string. If `tax.type` passed to this component is truly numeric, this function is fine.
-      // If `tax.type` is already a string like "IUC", this function might not be strictly needed for the table,
-      // or it should handle string inputs too.
-      // Given `interface Tax { type: number; ...}` in this file, I'll keep it for numeric input.
-      // The modal will use `parsedJson.type` (string) preferentially.
-        case 1: return "IVA"; // Placeholder, adjust to your numeric type mapping
-        case 2: return "IRS"; // Placeholder
-        case 3: return "IUC"; // Placeholder
+        case 1: return "IVA"; 
+        case 2: return "IRS"; 
+        case 3: return "IUC"; 
         default: return `${typeNumber}`;
     }
   };
 
-
+  // --- RENDERIZAÇÃO DO COMPONENTE ---
   return (
     <>
+      {/* Tabela de Impostos Urgentes */}
       <div className="table-responsive">
         <table className="table custom-table"> {/* Ensure 'custom-table' styles are defined */}
           <thead>
@@ -205,9 +232,10 @@ const UrgentTaxTable: React.FC<Props> = ({ taxes }) => {
           </thead>
           <tbody>
             {taxes && taxes.length > 0 ? (
+              // Mapeia a lista de impostos para renderizar cada linha da tabela.
               taxes.map((tax) => (
                 <tr key={tax.taxId}>
-                  {/* Use getTaxTypeDescriptionFromNumeric if tax.type is number, or tax.type directly if it's already string */}
+                  {/* Exibe o tipo do imposto, tratando tanto number como string. */}
                   <td>{typeof tax.type === 'number' ? getTaxTypeDescriptionFromNumeric(tax.type) : tax.type}</td>
                   <td>{tax.amount}</td>
                   <td>{tax.paymentDeadline}</td>
@@ -227,6 +255,7 @@ const UrgentTaxTable: React.FC<Props> = ({ taxes }) => {
                 </tr>
               ))
             ) : (
+              // Mensagem exibida se não houver impostos.
               <tr>
                 <td colSpan={5} className="text-center text-muted py-3">
                   Não existem impostos urgentes para este cliente.
@@ -237,7 +266,7 @@ const UrgentTaxTable: React.FC<Props> = ({ taxes }) => {
         </table>
       </div>
 
-      {/* Tax Details Modal - Structure Replicated from TaxesTable.tsx context */}
+      {/* Modal de Detalhes do Imposto (renderizado condicionalmente) */}
       {showTaxDetailModal && (
         <div 
           className="modal fade show d-block" 
@@ -249,7 +278,7 @@ const UrgentTaxTable: React.FC<Props> = ({ taxes }) => {
         >
           <div className="modal-dialog modal-lg modal-dialog-centered" onClick={(e) => e.stopPropagation()}> 
             <div className="modal-content" id="taxes-modal-content">
-              <div className="modal-header" id="taxes-modal-header"> {/* Ensure CSS for #taxes-modal-header provides white text for btn-close-white */}
+              <div className="modal-header" id="taxes-modal-header">
                 <h5 className="modal-title" id="taxDetailsModalLabel">
                   <FontAwesomeIcon icon={faInfoCircle} className="me-2" />
                   {loadingModalDetails ? "A Carregar Detalhes..." : 
@@ -264,6 +293,7 @@ const UrgentTaxTable: React.FC<Props> = ({ taxes }) => {
                 ></button>
               </div>
               <div className="modal-body" id="taxes-modal-body">
+                {/* Exibe um spinner, uma mensagem de erro, ou os detalhes do imposto. */}
                 {loadingModalDetails ? (
                   <div className="text-center py-5">
                     <FontAwesomeIcon icon={faSpinner} spin size="3x" />
@@ -273,17 +303,19 @@ const UrgentTaxTable: React.FC<Props> = ({ taxes }) => {
                   <div className="alert alert-danger">{modalError}</div>
                 ) : selectedTaxForModal ? (
                   <div id="taxes-details-container">
-                    <div id="taxes-details-card"> {/* Ensure CSS for #taxes-details-card and list items */}
+                    <div id="taxes-details-card">
                       <h6 className="card-title" id="taxes-card-title">
                         <FontAwesomeIcon icon={faTag} className="me-2" />
                         Detalhes da Obrigação Fiscal
                       </h6>
                       <div id="taxes-details-list">
+                        {/* Detalhes principais exibidos explicitamente. */}
                         <div className="detail-row" id="taxes-detail-row-tipo">
-                          <FontAwesomeIcon icon={faTag} className="detail-icon" /> {/* Ensure CSS for .detail-icon, .detail-label, .detail-value */}
+                          <FontAwesomeIcon icon={faTag} className="detail-icon" />
                           <span className="detail-label">Tipo:</span>
                           <span className="detail-value">{selectedTaxForModal.tipo}</span>
                         </div>
+                        {/* Secção para detalhes do veículo, clicável e expansível se for IUC. */}
                         <div 
                           className="detail-row d-flex align-items-center" 
                           id="taxes-detail-row-referencia"
@@ -302,6 +334,7 @@ const UrgentTaxTable: React.FC<Props> = ({ taxes }) => {
                             />
                           )}
                         </div>
+                        {/* Renderização condicional dos detalhes do veículo. */}
                         {selectedTaxForModal.tipo === 'IUC' && showVehicleDetails && (
                           <div className="detail-row ms-4 mt-2" id="taxes-detail-row-vehicle-details">
                             <div className="card p-3 bg-light">
@@ -351,7 +384,7 @@ const UrgentTaxTable: React.FC<Props> = ({ taxes }) => {
                             </div>
                           </div>
                         )}
-                        {selectedTaxForModal.clientName && ( // Will only show if clientName was in taxData JSON
+                        {selectedTaxForModal.clientName && ( 
                             <div className="detail-row" id="taxes-detail-row-cliente">
                                 <FontAwesomeIcon icon={faUser} className="detail-icon" />
                                 <span className="detail-label">Cliente:</span>
@@ -377,7 +410,7 @@ const UrgentTaxTable: React.FC<Props> = ({ taxes }) => {
                                 </span>
                             </div>
                         )}
-                        {/* Generic JSON data display from selectedTaxForModal.json */}
+                        {/* Renderização dos restantes detalhes gerais do JSON. */}
                         {(() => {
                           try {
                             const jsonDataFromModalState = JSON.parse(selectedTaxForModal.json);
@@ -385,7 +418,7 @@ const UrgentTaxTable: React.FC<Props> = ({ taxes }) => {
                               ([key, value]) => 
                                 key !== 'detalhes_veiculo' &&
                                 !fieldsToExclude.includes(key) &&
-                                !fieldsToExclude.includes(formatFieldName(key)) && // Check formatted key too
+                                !fieldsToExclude.includes(formatFieldName(key)) &&
                                 value != null &&
                                 String(value).trim() !== '' &&
                                 String(value).toLowerCase() !== 'null' &&
@@ -431,7 +464,7 @@ const UrgentTaxTable: React.FC<Props> = ({ taxes }) => {
               <div className="modal-footer" id="taxes-modal-footer">
                 <button
                   type="button"
-                  className="btn btn-primary modern-btn rounded-pill" // Ensure .modern-btn is styled
+                  className="btn btn-primary modern-btn rounded-pill"
                   onClick={handleCloseTaxDetailsModal}
                   id="taxes-close-button"
                 >

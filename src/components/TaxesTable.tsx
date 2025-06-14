@@ -3,21 +3,28 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSearch, faSortUp, faSortDown, faInfoCircle, faSyncAlt, faTag, faUser, faCalendar, faEuroSign, faCheckCircle, faFileAlt, faChevronDown, faChevronUp } from '@fortawesome/free-solid-svg-icons';
 
-// --- IMPORTS PARA REACT-DATEPICKER ---
+// IMPORTS PARA REACT-DATEPICKER
 import DatePicker, { registerLocale, setDefaultLocale } from 'react-datepicker';
 import { pt } from 'date-fns/locale'; // Importa a localização portuguesa
 import 'react-datepicker/dist/react-datepicker.css'; // Importa o CSS base
-// --- FIM DOS IMPORTS ---
 
-import '../pages/Taxes.css'; // Certifique-se que este CSS existe e está correto
 
-// Registar e definir a localização portuguesa como padrão
+import '../pages/Taxes.css';
+
+// Configura o 'react-datepicker' para usar a localização portuguesa por defeito em toda a aplicação.
 registerLocale('pt', pt);
 setDefaultLocale('pt');
 
-// @ts-ignore - Para permitir window.bootstrap (se não tiver tipos)
+// Declaração para permitir o acesso ao objeto 'bootstrap' na janela global, caso não existam tipos TypeScript definidos.
+// @ts-ignore
 declare var window: any;
 
+// --- INTERFACES DE DADOS ---
+
+/**
+ * @interface ObrigacaoFiscal
+ * Define a estrutura de dados para uma única obrigação fiscal.
+ */
 interface ObrigacaoFiscal {
     identificadorUnico: string;
     tipo: string;
@@ -25,20 +32,32 @@ interface ObrigacaoFiscal {
     clientName: string;
     valor: string;
     estado: string;
-    json: string;
+    json: string; // Campo que contém dados adicionais e estruturados em formato JSON string.
 }
 
+/**
+ * @interface TaxesTableProps
+ * Define as propriedades (props) que o componente TaxesTable espera receber de um componente pai.
+ */
 interface TaxesTableProps {
-    obrigações: ObrigacaoFiscal[] | null;
-    loading: boolean;
-    error: string;
-    onRefresh: () => void;
-    lastUpdated: string | null;
-    isRefreshing: boolean;
-    onModalOpen: () => void;
-    onModalClose: () => void;
+    obrigações: ObrigacaoFiscal[] | null; // A lista de obrigações a ser exibida.
+    loading: boolean;                     // Booleano que indica se os dados estão a ser carregados.
+    error: string;                        // Mensagem de erro, se alguma ocorrer durante o fetch dos dados.
+    onRefresh: () => void;                // Função callback para ser chamada quando o utilizador pede para atualizar os dados.
+    lastUpdated: string | null;           // A hora da última atualização bem-sucedida.
+    isRefreshing: boolean;                // Booleano que indica se uma atualização está em progresso (para o ícone de spin).
+    onModalOpen: () => void;              // Callback para quando o modal de detalhes é aberto.
+    onModalClose: () => void;             // Callback para quando o modal de detalhes é fechado.
 }
 
+
+// --- FUNÇÕES HELPER (AUXILIARES) ---
+
+/**
+ * @function getBadgeClassForEstado
+ * Retorna uma classe CSS para o "badge" de estado, com base no valor do texto do estado.
+ * Isto permite colorir os estados de forma diferente na tabela (ex: Pendente a amarelo, Pago a verde).
+ */
 const getBadgeClassForEstado = (estado?: string): string => {
     if (!estado) return 'badge-secondary';
     let currentEstado = estado;
@@ -59,6 +78,11 @@ const getBadgeClassForEstado = (estado?: string): string => {
     return 'badge-secondary';
 };
 
+/**
+ * @function formatFieldName
+ * Formata os nomes das chaves (keys) vindas do campo JSON para uma apresentação mais legível na UI do modal.
+ * Converte camelCase para Title Case e substitui abreviaturas por termos mais claros.
+ */
 const formatFieldName = (key: string): string => {
     if (key === 'categoriaIUC') return 'Categoria IUC';
     if (key === 'dataMatricula') return 'Data de Matrícula';
@@ -74,6 +98,10 @@ const formatFieldName = (key: string): string => {
     return formatted;
 };
 
+/**
+ * @function formatValue
+ * Formata os valores do JSON, convertendo 'true'/'false' para 'Sim'/'Não' para melhor leitura.
+ */
 const formatValue = (value: any): string => {
     const trimmedValue = String(value).trim();
     if (trimmedValue.toLowerCase() === 'true') return 'Sim';
@@ -81,27 +109,45 @@ const formatValue = (value: any): string => {
     return trimmedValue;
 };
 
+// Lista de campos a serem explicitamente excluídos da exibição no modal de detalhes,
+// por serem redundantes ou informação sensível.
 const fieldsToExclude = [
     'Nif', 'Nif Loc', 'Matricula', 'Data Pais E E E', 'Transporte G O',
     'Data da primeira matricula', 'Matricula Value', 'data1Matricula'
 ];
 
+/**
+ * @component TaxesTable
+ * Componente principal que renderiza a tabela de obrigações fiscais.
+ * Utiliza `React.memo` para otimizar a performance, evitando re-renderizações desnecessárias se as props não mudarem.
+ */
 const TaxesTable: React.FC<TaxesTableProps> = React.memo(({
     obrigações, loading, error, onRefresh, lastUpdated, isRefreshing, onModalOpen, onModalClose
 }) => {
+    // Estados para controlar os valores dos filtros e da pesquisa.
     const [searchTerm, setSearchTerm] = useState('');
     const [filterType, setFilterType] = useState<string>('Todos');
-    const [tiposDeObrigacao, setTiposDeObrigacao] = useState<string[]>(['Todos']);
-    const [sortBy, setSortBy] = useState<keyof ObrigacaoFiscal>('dataLimite');
+    const [estadoFilter, setEstadoFilter] = useState<string>('Todos');
     const [fromDate, setFromDate] = useState<Date | null>(null);
     const [toDate, setToDate] = useState<Date | null>(null);
-    const [estadoFilter, setEstadoFilter] = useState<string>('Todos');
+
+    // Estados para controlar a ordenação da tabela.
+    const [sortBy, setSortBy] = useState<keyof ObrigacaoFiscal>('dataLimite');
     const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+    
+    // Estados para popular dinamicamente os menus de filtro.
+    const [tiposDeObrigacao, setTiposDeObrigacao] = useState<string[]>(['Todos']);
     const [estadosDisponiveis, setEstadosDisponiveis] = useState<string[]>(['Todos']);
+
+    // Estados para controlar o modal de detalhes.
     const [selectedObrigacao, setSelectedObrigacao] = useState<ObrigacaoFiscal | null>(null);
     const [showVehicleDetails, setShowVehicleDetails] = useState(false);
+    
+    // Referência (useRef) para o elemento do modal, permitindo interagir com ele via JavaScript.
     const modalRef = useRef<HTMLDivElement>(null);
 
+    // Este efeito é executado sempre que a lista de 'obrigações' (vinda das props) muda.
+    // Extrai os tipos e estados únicos para popular os menus de filtro.
     useEffect(() => {
         if (obrigações) {
             const tiposUnicos = [...new Set(obrigações.map(o => o.tipo))];
@@ -112,6 +158,8 @@ const TaxesTable: React.FC<TaxesTableProps> = React.memo(({
         }
     }, [obrigações]);
 
+    // Este efeito adiciona e remove 'event listeners' para os eventos do modal do Bootstrap.
+    // Permite que o componente pai saiba quando o modal é aberto ou fechado.
     useEffect(() => {
         const modalElement = modalRef.current;
         if (modalElement) {
@@ -126,13 +174,16 @@ const TaxesTable: React.FC<TaxesTableProps> = React.memo(({
         }
     }, [onModalOpen, onModalClose]);
 
+    // HANDLERS
     const handleSearch = (event: ChangeEvent<HTMLInputElement>) => setSearchTerm(event.target.value);
     const handleFilterType = (event: ChangeEvent<HTMLSelectElement>) => setFilterType(event.target.value);
     const handleFilterEstado = (event: ChangeEvent<HTMLSelectElement>) => setEstadoFilter(event.target.value);
 
+    // Lógica para alternar a ordenação da coluna clicada.
     const handleSort = (column: keyof ObrigacaoFiscal) => {
         setSortBy(prevSortBy => {
             if (prevSortBy === column) {
+                // Se a coluna já é a de ordenação, inverte a direção.
                 setSortDirection(prevDir => (prevDir === 'asc' ? 'desc' : 'asc'));
                 return prevSortBy;
             } else {
@@ -142,18 +193,22 @@ const TaxesTable: React.FC<TaxesTableProps> = React.memo(({
         });
     };
 
+    // Define qual obrigação foi selecionada para ser exibida no modal de detalhes.
     const handleShowDetails = (obrigacao: ObrigacaoFiscal) => {
         setSelectedObrigacao(obrigacao);
         setShowVehicleDetails(false); // Reset on new selection
     };
 
+    // Limpa a seleção e fecha o modal
     const handleCloseModal = () => {
         setSelectedObrigacao(null);
         setShowVehicleDetails(false);
     };
 
+    // Alterna a visibilidade da secção de detalhes do veículo dentro do modal.
     const toggleVehicleDetails = () => setShowVehicleDetails(prev => !prev);
 
+    // 1. Filtra a lista de obrigações com base em todos os filtros ativos.
     const filteredObrigações = (obrigações || []).filter((obrigacao) => {
         const typeMatch = filterType === 'Todos' || obrigacao.tipo === filterType;
 
@@ -167,8 +222,11 @@ const TaxesTable: React.FC<TaxesTableProps> = React.memo(({
             (!fromDate || (validObrigacaoDate && validObrigacaoDate >= fromDate)) &&
             (!toDate || (validObrigacaoDate && validObrigacaoDate <= toDate));
 
+        // Lógica de correspondência de estado.
         const estadoParaFiltro = obrigacao.estado === '-' ? 'Pendente' : obrigacao.estado;
         const estadoMatch = estadoFilter === 'Todos' || estadoParaFiltro === estadoFilter;
+
+        // Lógica de pesquisa por texto, normalizando strings para ser case-insensitive e ignorar acentos.
         const normalize = (str: string) => str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
         const normalizedSearch = normalize(searchTerm);
         const searchFields = [
@@ -180,6 +238,7 @@ const TaxesTable: React.FC<TaxesTableProps> = React.memo(({
         return typeMatch && searchMatch && dateMatch && estadoMatch;
     });
 
+    // 2. Ordena a lista já filtrada.
     const sortedObrigações = [...filteredObrigações].sort((a, b) => {
         let comparison = 0;
         switch (sortBy) {
@@ -206,9 +265,11 @@ const TaxesTable: React.FC<TaxesTableProps> = React.memo(({
                 break;
             case 'clientName': comparison = a.clientName.localeCompare(b.clientName); break;
         }
+        // Aplica a direção da ordenação (ascendente ou descendente).
         return sortDirection === 'asc' ? comparison : comparison * -1;
     });
 
+    // Estilo comum para alinhar verticalmente o conteúdo das células da tabela.
     const cellStyle = { verticalAlign: 'middle' };
 
     if (loading && !obrigações) return <div className="container mt-5 text-center">A carregar obrigações fiscais...</div>;
@@ -216,6 +277,7 @@ const TaxesTable: React.FC<TaxesTableProps> = React.memo(({
 
     return (
         <div className="container-fluid mt-5 animate-fade-in">
+            {/* Cabeçalho da página com botão de atualização */}
             <div className="d-flex justify-content-between align-items-center mb-3">
                 {lastUpdated && (
                     <p className="text-muted mb-0" onClick={onRefresh} style={{ cursor: 'pointer' }}>
@@ -226,6 +288,7 @@ const TaxesTable: React.FC<TaxesTableProps> = React.memo(({
                 {!lastUpdated && !loading && <p className="text-muted mb-0">Clique no ícone para atualizar.</p>}
             </div>
 
+            {/* Painel de filtros */}
             <div className="d-flex justify-content-between align-items-center mb-3">
                 <div className="d-flex gap-2 align-items-center flex-wrap">
                     <div className="d-flex gap-2 align-items-center">
@@ -277,6 +340,7 @@ const TaxesTable: React.FC<TaxesTableProps> = React.memo(({
                     </select>
                 </div>
 
+                {/* Barra de pesquisa */}            
                 <div className="d-flex justify-content-end">
                     <div className="position-relative d-flex align-items-center search-bar-container">
                         <div className="search-icon"> <FontAwesomeIcon icon={faSearch} className="text-gray-400" /> </div>
@@ -285,10 +349,12 @@ const TaxesTable: React.FC<TaxesTableProps> = React.memo(({
                 </div>
             </div>
 
+            {/* Container da tabela */}            
             <div className="table-container">
                 <div className="table-responsive w-100">
                     <table className="table table-borderless table-hover bg-white shadow-sm w-100">
                         <thead className="bg-light">
+                            {/* Cabeçalhos da tabela clicáveis para ordenação */}
                             <tr>
                                 <th style={cellStyle} onClick={() => handleSort('identificadorUnico')} className="cursor-pointer text-secondary">Referência <FontAwesomeIcon icon={sortBy === 'identificadorUnico' ? (sortDirection === 'asc' ? faSortUp : faSortDown) : faSortDown} size="sm" /></th>
                                 <th style={cellStyle} onClick={() => handleSort('tipo')} className="cursor-pointer text-secondary">Tipo <FontAwesomeIcon icon={sortBy === 'tipo' ? (sortDirection === 'asc' ? faSortUp : faSortDown) : faSortDown} size="sm" /></th>
@@ -300,6 +366,7 @@ const TaxesTable: React.FC<TaxesTableProps> = React.memo(({
                             </tr>
                         </thead>
                         <tbody>
+                            {/* Renderização condicional do corpo da tabela */}
                             {loading && sortedObrigações.length === 0 ? (
                                 <tr><td colSpan={7} className="text-center py-4 text-muted">A carregar dados...</td></tr>
                             ) : sortedObrigações.length === 0 ? (
@@ -330,7 +397,7 @@ const TaxesTable: React.FC<TaxesTableProps> = React.memo(({
                 </div>
             </div>
 
-            {/* Modal de Detalhes da Obrigação Fiscal (CÓDIGO COMPLETO REINTEGRADO) */}
+            {/* Modal para exibir detalhes de uma obrigação fiscal */}
             <div ref={modalRef} className="modal fade" id="taxes-details-modal" tabIndex={-1} aria-labelledby="taxes-details-modal-label" aria-hidden="true">
                 <div className="modal-dialog modal-xl modal-dialog-centered">
                     <div className="modal-content" id="taxes-modal-content">
@@ -349,6 +416,7 @@ const TaxesTable: React.FC<TaxesTableProps> = React.memo(({
                                             <FontAwesomeIcon icon={faTag} className="me-2" /> Detalhes da Obrigação Fiscal
                                         </h6>
                                         <div id="taxes-details-list">
+                                            {/* Detalhes principais da obrigação */}
                                             <div className="detail-row" id="taxes-detail-row-tipo">
                                                 <FontAwesomeIcon icon={faTag} className="detail-icon" />
                                                 <span className="detail-label">Tipo:</span>
@@ -366,8 +434,10 @@ const TaxesTable: React.FC<TaxesTableProps> = React.memo(({
                                                         <h6 className="mb-3">Detalhes do Veículo</h6>
                                                         {(() => {
                                                             try {
+                                                                // PARCE JSON e renderiza os detalhes do veículo.
                                                                 const jsonData = JSON.parse(selectedObrigacao.json);
                                                                 const vehicleDetails = jsonData.detalhes_veiculo || {};
+                                                                // Filtra para remover campos vazios, nulos ou da lista de exclusão.
                                                                 const validEntries = Object.entries(vehicleDetails).filter(([key, value]) => !fieldsToExclude.includes(key) && !fieldsToExclude.includes(formatFieldName(key)) && value != null && String(value).trim() !== '' && String(value).toLowerCase() !== 'null' && String(value) !== '-');
                                                                 if (validEntries.length === 0) {
                                                                     return (<div className="detail-row text-muted" id="taxes-detail-row-vehicle-empty"><FontAwesomeIcon icon={faFileAlt} className="detail-icon me-2" /><span className="detail-value">Nenhum detalhe de veículo disponível.</span></div>);
@@ -389,6 +459,7 @@ const TaxesTable: React.FC<TaxesTableProps> = React.memo(({
                                             <div className="detail-row" id="taxes-detail-row-data"><FontAwesomeIcon icon={faCalendar} className="detail-icon" /><span className="detail-label">Data Limite:</span><span className="detail-value">{selectedObrigacao.dataLimite}</span></div>
                                             <div className="detail-row" id="taxes-detail-row-valor"><FontAwesomeIcon icon={faEuroSign} className="detail-icon" /><span className="detail-label">Valor:</span><span className="detail-value">{selectedObrigacao.valor}</span></div>
                                             <div className="detail-row" id="taxes-detail-row-estado"><FontAwesomeIcon icon={faCheckCircle} className="detail-icon" /><span className="detail-label">Estado:</span><span className={`badge modern-badge ${getBadgeClassForEstado(selectedObrigacao.estado)}`}>{selectedObrigacao.estado === '-' ? 'Pendente' : selectedObrigacao.estado}</span></div>
+                                            {/* Renderização dos restantes detalhes gerais do JSON */}
                                             {(() => {
                                                 try {
                                                     const jsonData = JSON.parse(selectedObrigacao.json);

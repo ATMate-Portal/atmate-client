@@ -1,15 +1,21 @@
-// src/components/layout/MainLayout.tsx
 import React from 'react';
 import { Outlet } from 'react-router-dom';
-import Sidebar from './Sidebar'; // O teu componente Sidebar
-// import Navbar from './Navbar'; // Se tiveres uma Navbar também
+// Importa o componente da barra de navegação lateral.
+import Sidebar from './Sidebar';
 
+/**
+ * @component MainLayout
+ * Este componente define a estrutura visual principal para todas as páginas
+ * protegidas (que requerem autenticação). 
+ */
 const MainLayout: React.FC = () => {
   return (
-    <div className="app-wrapper"> {/* Podes manter ou ajustar esta classe */}
+    // 'app-wrapper'= contentor principal
+    <div className="app-wrapper">
       <Sidebar />
-      <main className="app-main"> {/* Esta classe pode vir do teu App.css */}
-        <Outlet /> {/* As rotas filhas serão renderizadas aqui */}
+      <main className="app-main">
+        {/* <Outlet> é onde React Router irá renderizar o componente da página correspondente à rota ativa.*/}
+        <Outlet />
       </main>
     </div>
   );

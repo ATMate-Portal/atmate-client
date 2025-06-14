@@ -1,5 +1,5 @@
 const ENV = {
-    API_BASE_URL: import.meta.env.VITE_API_BASE_URL || "http://localhost:8080",
+    API_BASE_URL: import.meta.env.VITE_API_BASE_URL || "http://localhost:8180",
   };
 
 console.log("🔍 URL carregada dentro do config.ts:", ENV.API_BASE_URL);
@@ -7,7 +7,7 @@ console.log("🔍 URL carregada dentro do config.ts:", ENV.API_BASE_URL);
 export default ENV;
 
 //O Vite usa variáveis de ambiente do ficheiro .env (VITE_API_BASE_URL).
-//Se nenhuma variável for definida, usa http://localhost:8080 por padrão.
+//Se nenhuma variável for definida, usa http://localhost:8180 por padrão.
 
 
 // COMANDOS PARA EXECUTAR APP
