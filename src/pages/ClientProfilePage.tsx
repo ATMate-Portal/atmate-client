@@ -1,53 +1,58 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import useApi from '../hooks/useApi'; // Assumindo hook existente
-import TaxesTable from '../components/TaxesTable'; // Assumindo componente existente
+import useApi from '../hooks/useApi'; 
+import TaxesTable from '../components/TaxesTable'; 
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
     faArrowLeft, faMapMarkerAlt, faPhone, faFileInvoiceDollar,
     faUser, faIdCard, faCalendar, faGlobe, faBuilding, faSpinner,
-    faExclamationTriangle, faSyncAlt, faTrashAlt,
-    faChevronDown, faBell
+    faExclamationTriangle, faSyncAlt, faTrashAlt, faBell
 } from '@fortawesome/free-solid-svg-icons';
 
-// Importar o CSS encapsulado
 import './ClientProfilePage.css';
 
-// --- Interfaces (mantidas) ---
+// --- INTERFACES DE DADOS ---
+// Definem a estrutura dos dados do cliente recebidos da API.
 interface AddressDTO { id: number; street: string; doorNumber: string; zipCode: string; city: string; county: string; district: string; parish: string; country: string; addressTypeName: string; }
 interface ContactDTO { id: number; contactTypeName: string; contact: string; description: string; }
 interface TaxDTO { identificadorUnico: string; tipo: string; dataLimite: string; clientName: string; valor: string; estado: string; json: string; }
 interface NotificationDTO { clientId: number; notificationType: string; taxType: string; status: string; title: string; message: string; sendDate: string; }
 interface ClientDetails { id: number; name: string; nif: number; gender: string; nationality: string; associatedColaborator: string; birthDate: string; addresses: AddressDTO[]; contacts: ContactDTO[]; taxes: TaxDTO[]; notifications: NotificationDTO[];}
 
-// --- Configuração ---
+// --- CONFIGURAÇÃO ---
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
+/**
+ * @component ClientProfilePage
+ * Página de perfil detalhado de um cliente.
+ * Exibe informações pessoais, moradas, contactos, impostos e notificações.
+ * Inclui uma navegação "spy-scroll" que destaca a secção visível no menu.
+ */
 export default function ClientProfilePage() {
-    console.log("ClientProfilePage RENDERED"); // Log para depuração
-
-    const { id } = useParams<{ id: string }>();
+    // --- HOOKS e ESTADOS ---
+    const { id } = useParams<{ id: string }>(); // Obtém o ID do cliente a partir do URL (ex: /clients/123).
     const navigate = useNavigate();
+
+    // Chamada à API para obter os detalhes do cliente com base no ID.
     const { data: client, loading, error } = useApi<ClientDetails>(id ? `atmate-gateway/clients/${id}` : '');
 
-
+    // Estados para controlo da UI (atualização, secção ativa, etc.).
     const [lastUpdated, setLastUpdated] = useState<string | null>(null);
     const [isRefreshing, setIsRefreshing] = useState(false);
-    const [activeSection, setActiveSection] = useState<string>('#pessoal');
-    const headerRef = useRef<HTMLElement>(null);
-    const [headerHeight, setHeaderHeight] = useState(65);
-
+    const [activeSection, setActiveSection] = useState<string>('#pessoal');  // Secção ativa no menu de navegação.
     const [isDeleting, setIsDeleting] = useState(false);
     const [deleteError, setDeleteError] = useState<string | null>(null);
+    const [isTaxModalOpen, setIsTaxModalOpen] = useState(false); // Controla se o modal da tabela de impostos está aberto.
 
-    // Refs para controlar o scroll e observer
-    const isScrollingProgrammatically = useRef(false);
-    const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-    const observerRef = useRef<IntersectionObserver | null>(null);
+    // Refs para interagir com elementos do DOM e controlar comportamentos.
+    const headerRef = useRef<HTMLElement>(null); // Referência ao cabeçalho fixo.
+    const [headerHeight, setHeaderHeight] = useState(65); // Altura do cabeçalho para calcular o offset do scroll.
+    const isScrollingProgrammatically = useRef(false); // Flag para distinguir scroll do utilizador de scroll programático.
+    const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null); // Para gerir o timeout do scroll programático.
+    const observerRef = useRef<IntersectionObserver | null>(null); // Referência ao IntersectionObserver.
 
-    const [isTaxModalOpen, setIsTaxModalOpen] = useState(false);
-
-    // Callbacks memoizadas para passar ao TaxesTable
+    // --- FUNÇÕES E CALLBACKS ---
+    // Callbacks para evitar recriações desnecessárias.
     const handleModalOpen = useCallback(() => setIsTaxModalOpen(true), []);
     const handleModalClose = useCallback(() => setIsTaxModalOpen(false), []);
 
@@ -67,7 +72,7 @@ export default function ClientProfilePage() {
         }
     };
 
-    // Função para extrair a <div class="details"> do HTML de um email
+    // Função para extrair e renderizar de forma segura o HTML de uma notificação de email.
     const extractDetailsDivHtml = (fullHtmlString: string): string | null => {
         if (!fullHtmlString || typeof fullHtmlString !== 'string') {
             return null;
@@ -86,13 +91,15 @@ export default function ClientProfilePage() {
         }
     };
 
+    // Calcula a altura do cabeçalho fixo para ajustar o scroll.
     useEffect(() => {
         if (headerRef.current) {
             setHeaderHeight(headerRef.current.offsetHeight + 5);
         }
     }, [client, loading]);
 
-    // useEffect do Observer (ATIVO, mas com lógica de desativação)
+    // Efeito principal para o "Spy Scrolling" com IntersectionObserver.
+    // Este efeito configura um "observador" que deteta qual secção da página está visível.
     useEffect(() => {
         if (isTaxModalOpen || !client || loading) {
             if (observerRef.current) {
@@ -105,16 +112,17 @@ export default function ClientProfilePage() {
 
         if (observerRef.current) { observerRef.current.disconnect(); }
 
-        console.log("Setting up observer..."); // Log
+        // Opções do observer: `rootMargin` ajusta a "área de visão" para compensar o cabeçalho fixo.
         const observerOptions = {
             root: null,
             rootMargin: `-${headerHeight}px 0px -35% 0px`,
             threshold: 0.01,
         };
 
+        // Callback executado quando uma secção entra ou sai da área de visão.
         const observerCallback = (entries: IntersectionObserverEntry[]) => {
             if (isScrollingProgrammatically.current || isTaxModalOpen) return;
-
+            // Encontra a entrada mais visível no ecrã.    
             let currentVisibleEntry: IntersectionObserverEntry | null = null;
             for (const entry of entries) {
                 if (entry.isIntersecting) {
@@ -126,7 +134,7 @@ export default function ClientProfilePage() {
 
             if (currentVisibleEntry) {
                 const newActiveSection = `#${(currentVisibleEntry.target as Element).id}`;
-                setActiveSection(prev => prev !== newActiveSection ? newActiveSection : prev);
+                setActiveSection(prev => prev !== newActiveSection ? newActiveSection : prev); // Atualiza a secção ativa no menu.
             }
         };
 
@@ -143,10 +151,9 @@ export default function ClientProfilePage() {
     }, [client, headerHeight, loading, isTaxModalOpen]);
 
 
-    // useRef para rastrear o estado de loading anterior
     const prevLoading = useRef(loading);
 
-    // useEffect para `lastUpdated` corrigido para evitar loop
+    // Efeito para atualizar a data da "Última atualização".
     useEffect(() => {
         if (prevLoading.current === true && loading === false && client && !error) {
             console.log("Setting lastUpdated because loading finished."); // Log
@@ -203,6 +210,10 @@ export default function ClientProfilePage() {
         return `profile-nav-link ${activeSection === hash ? 'active' : ''}`;
     };
 
+    /**
+     * @function scrollToSection
+     * Faz o scroll suave para uma secção da página quando um link do menu é clicado.
+     */
     const scrollToSection = (event: React.MouseEvent<HTMLAnchorElement>, sectionId: string) => {
         event.preventDefault();
 
@@ -285,11 +296,13 @@ export default function ClientProfilePage() {
     return (
         <div className="client-profile-main-container">
             <div className="client-profile-page">
+                {/* Cabeçalho fixo com navegação por secções */}
                 <header className="profile-header sticky-top" ref={headerRef}>
                     <div className="header-main-content">
                         <button onClick={() => navigate('/clients')} className="btn btn-tertiary back-button" aria-label="Voltar à lista de clientes">
                             <FontAwesomeIcon icon={faArrowLeft} /> <span>Lista de Clientes</span>
                         </button>
+                        {/* Navegação que usa a função scrollToSection */}
                         <nav className="profile-nav-links">
                             {client && (
                                 <>
@@ -301,6 +314,7 @@ export default function ClientProfilePage() {
                                 </>
                             )}
                         </nav>
+                        {/* Ações e informação de atualização */}
                         <div className="header-actions-info">
                             {lastUpdated && !isRefreshing && (
                                 <span className="last-updated-info" title={`Atualizado em ${new Date(lastUpdated).toLocaleString('pt-PT')}`}>
@@ -327,7 +341,7 @@ export default function ClientProfilePage() {
                         </div>
                     </div>
                 </header>
-
+                {/* Conteúdo principal da página */}            
                 <main className="profile-content" style={{ paddingTop: `${headerHeight}px` }} key={id}>
                     {client && (
                         <div className="profile-subheader">
@@ -336,7 +350,7 @@ export default function ClientProfilePage() {
                         </div>
                     )}
 
-                    {loading && client && ( // Loading de atualização, não o inicial
+                    {loading && client && ( // Loading de atualização
                         <div className="inline-message loading">
                             <FontAwesomeIcon icon={faSpinner} spin /> A atualizar dados...
                         </div>
@@ -364,6 +378,7 @@ export default function ClientProfilePage() {
 
                     {client && (
                         <>
+                            {/* Secção de Informações Pessoais */}
                             <section id="pessoal" className="profile-section">
                                 <div className="section-content personal-info-list">
                                     <div className="info-item"> <span className="info-label"><FontAwesomeIcon icon={faIdCard} /> Nome</span> <span className="info-value">{client.name}</span> </div>
@@ -375,6 +390,7 @@ export default function ClientProfilePage() {
                                 </div>
                             </section>
 
+                            {/* Secção de Moradas */}
                             <section id="moradas" className="profile-section">
                                 <header className="section-header"> <h2><FontAwesomeIcon icon={faMapMarkerAlt} /> Moradas</h2> </header>
                                 <div className="section-content content-no-padding">
@@ -389,6 +405,7 @@ export default function ClientProfilePage() {
                                 </div>
                             </section>
 
+                            {/* Secção de Contactos */}        
                             <section id="contactos" className="profile-section">
                                 <header className="section-header"> <h2><FontAwesomeIcon icon={faPhone} /> Contactos</h2> </header>
                                 <div className="section-content content-no-padding">
@@ -403,6 +420,7 @@ export default function ClientProfilePage() {
                                 </div>
                             </section>
 
+                            {/* Secção de Impostos */}        
                             <section id="impostos" className="profile-section">
                                 <header className="section-header"> <h2><FontAwesomeIcon icon={faFileInvoiceDollar} /> Impostos e Obrigações</h2> </header>
                                 <div className="section-content">
@@ -427,9 +445,10 @@ export default function ClientProfilePage() {
                                 </div>
                             </section>
 
+                            {/* Secção de Notificações */}        
                             <section id="notifications" className="profile-section">
                                     <header className="section-header"> <h2><FontAwesomeIcon icon={faBell} /> Notificações</h2> </header>
-                                        <div className="messages-history-table-container"> {/* Usando classes do seu exemplo */}
+                                        <div className="messages-history-table-container">
                                             <table className="messages-history-table">
                                             <thead>
                                                 <tr>
@@ -438,22 +457,20 @@ export default function ClientProfilePage() {
                                                 <th>Status</th>
                                                 <th>Título</th>
                                                 <th>Mensagem</th>
-                                                {/* Coluna "Tipo Notif." e "Tipo Imposto" podem ser adicionadas se desejado */}
-                                                {/* Ex: <th>Tipo Notificação</th> */}
-                                                {/* Ex: <th>Tipo Imposto</th> */}
+
                                                 </tr>
                                             </thead>
                                             <tbody>
                                                 {client.notifications.length === 0 ? (
                                                 <tr>
-                                                    <td colSpan={5} style={{ textAlign: 'center' }}> {/* Ajuste colSpan conforme o nº de colunas */}
+                                                    <td colSpan={5} style={{ textAlign: 'center' }}> 
                                                     Não existem notificações para apresentar.
                                                     </td>
                                                 </tr>
                                                 ) : (
                                                 client.notifications.map((notification, index) => {
                                                     let messageContent: React.ReactNode;
-                                                    // Assume-se que notification.notificationType será algo como "Email", "SMS", etc.
+
                                                     if (notification.notificationType?.toLowerCase().includes('email')) {
                                                     const detailsHtml = extractDetailsDivHtml(notification.message);
                                                     if (detailsHtml) {
@@ -476,7 +493,7 @@ export default function ClientProfilePage() {
                                                     }
 
                                                     return (
-                                                    <tr key={notification.clientId + '-' + index}> {/* Chave pode precisar ser mais robusta se houver IDs de notificação */}
+                                                    <tr key={notification.clientId + '-' + index}> 
                                                         <td data-label="Cliente (ID)">{notification.clientId}</td>
                                                         <td data-label="Data Envio">{formatDateTimeForTable(notification.sendDate)}</td>
                                                         <td data-label="Status">

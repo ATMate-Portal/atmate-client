@@ -7,7 +7,10 @@ import useApi from '../hooks/useApi';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 
-
+/**
+ * @interface Client
+ * Define a estrutura de dados para um único cliente.
+ */
 interface Client {
   id: number;
   name: string;
@@ -21,46 +24,38 @@ interface Client {
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
+/**
+ * @component Clients
+ * Página responsável por exibir, pesquisar, ordenar e adicionar clientes.
+ * Obtém a lista de clientes da API e gere a interatividade da tabela e de um modal para adicionar novos clientes.
+ */
 const Clients = () => {
+  // --- ESTADOS DO COMPONENTE (useState) ---
+    // Estados para a UI da tabela (pesquisa, ordenação, atualização).
   const [searchTerm, setSearchTerm] = useState('');
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [sortBy, setSortBy] = useState<keyof Client>('name');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [lastUpdated, setLastUpdated] = useState<string | null>(null);
+
+  // Estados para o modal de adicionar cliente.
   const [showModal, setShowModal] = useState(false);
   const [nif, setNif] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState(''); // Mantido para adicionar cliente
-  // Estados removidos relacionados com a eliminação:
-  // const [deleteSuccessMessage, setDeleteSuccessMessage] = useState('');
-  // const [deleteError, setDeleteError] = useState<string | null>(null);
-  // const [showDeleteModal, setShowDeleteModal] = useState(false);
-  // const [clientIdToDelete, setClientIdToDelete] = useState<number | null>(null);
-  const [selectedClientId, setSelectedClientId] = useState<number | null>(null);
+  const [error, setError] = useState<string | null>(null); // Erros do formulário do modal.
+  const [successMessage, setSuccessMessage] = useState(''); 
 
   const nifMaxLength = 9;
 
+  // --- OBTER DADOS ---
+  // Utiliza o hook 'useApi' para obter a lista de todos os clientes.
   const apiUrl = `atmate-gateway/clients/getClients?refresh=${refreshTrigger}`;
   const { data: clients, loading, error: fetchError } = useApi<Client[]>(apiUrl);
 
-  const handleOpenClientDetails = (id: number) => {
-    setSelectedClientId(id);
-  };
-
-  // handleCloseClientDetails não estava a ser usado, mas pode ser útil se implementares um modal de detalhes
-  // const handleCloseClientDetails = () => {
-  // setSelectedClientId(null);
-  // };
-
-  const handleRefresh = useCallback(() => {
-    setIsRefreshing(true);
-    setRefreshTrigger(prev => prev + 1);
-  }, [setIsRefreshing, setRefreshTrigger]);
-
+  // Atualizar a data da "Última atualização" quando os dados dos clientes são carregados.
   useEffect(() => {
     if (clients && clients.length > 0) {
       const now = new Date();
@@ -69,10 +64,19 @@ const Clients = () => {
     setIsRefreshing(false);
   }, [clients]);
 
+    const navigate = useNavigate();
+
+  // --- HANDLERS ---
+  const handleRefresh = useCallback(() => {
+    setIsRefreshing(true);
+    setRefreshTrigger(prev => prev + 1);
+  }, [setIsRefreshing, setRefreshTrigger]);
+
   const handleSearch = (event: ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(event.target.value);
   };
 
+  // Lógica para alternar a ordenação da coluna clicada.
   const handleSort = (column: keyof Client) => {
     if (sortBy === column) {
       setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
@@ -82,37 +86,7 @@ const Clients = () => {
     }
   };
 
-  const filteredClients = (clients || []).filter((client) => {
-    const normalize = (str: string | undefined | null) =>
-      str ? str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase() : '';
-
-    const normalizedSearch = normalize(searchTerm);
-
-    return (
-      normalize(client.name).includes(normalizedSearch) ||
-      normalize(client.nif.toString()).includes(normalizedSearch) ||
-      normalize(client.nationality).includes(normalizedSearch) ||
-      normalize(client.associatedColaborator).includes(normalizedSearch)
-    );
-  });
-
-  const sortedClients = [...filteredClients].sort((a, b) => {
-    let comparison = 0;
-    const valA = a[sortBy];
-    const valB = b[sortBy];
-
-    if (sortBy === 'name' || sortBy === 'gender' || sortBy === 'associatedColaborator') {
-        comparison = String(valA).localeCompare(String(valB));
-    } else if (sortBy === 'nif') {
-        comparison = Number(valA) - Number(valB);
-    } else if (sortBy === 'birthDate') {
-        const dateA = new Date(String(valA)).getTime();
-        const dateB = new Date(String(valB)).getTime();
-        comparison = (isNaN(dateA) ? 0 : dateA) - (isNaN(dateB) ? 0 : dateB);
-    }
-    return sortDirection === 'asc' ? comparison : comparison * -1;
-  });
-
+  // Controla as alterações nos inputs do formulário do modal.
   const handleNifChange = (event: ChangeEvent<HTMLInputElement>) => {
     const onlyDigits = event.target.value.replace(/\D/g, '');
     if (onlyDigits.length <= nifMaxLength) {
@@ -120,9 +94,7 @@ const Clients = () => {
     }
   };
 
-
-  const navigate = useNavigate();
-
+  // Navega para a página de detalhes do cliente quando uma linha é clicada.
   const handleClientClick = (clientId: number) => {
     navigate(`/clients/${clientId}`);
   };
@@ -135,6 +107,10 @@ const Clients = () => {
     setConfirmPassword(event.target.value);
   };
 
+  /**
+     * @function handleAddClient
+     * Valida os dados do formulário e envia um request POST para criar um novo cliente.
+     */
   const handleAddClient = async () => {
     setIsLoading(true);
     setError(null);
@@ -182,11 +158,6 @@ const Clients = () => {
     }
   };
 
-  // Funções removidas relacionadas com a eliminação:
-  // const handleDeleteClient = async () => { ... };
-  // const handleOpenDeleteModal = (clientId: number) => { ... };
-  // const handleCloseDeleteModal = () => { ... };
-
   const handleCloseModal = () => {
     setShowModal(false);
     setNif('');
@@ -196,12 +167,48 @@ const Clients = () => {
     setSuccessMessage(''); // Limpa mensagem de sucesso ao fechar o modal
   };
 
+  // --- LÓGICA DE FILTRAGEM E ORDENAÇÃO (CLIENT-SIDE) ---
+  // 1. Filtra a lista de clientes com base no termo de pesquisa.
+  const filteredClients = (clients || []).filter((client) => {
+    const normalize = (str: string | undefined | null) =>
+      str ? str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase() : '';
+
+    const normalizedSearch = normalize(searchTerm);
+
+    return (
+      normalize(client.name).includes(normalizedSearch) ||
+      normalize(client.nif.toString()).includes(normalizedSearch) ||
+      normalize(client.nationality).includes(normalizedSearch) ||
+      normalize(client.associatedColaborator).includes(normalizedSearch)
+    );
+  });
+
+  // 2. Ordena a lista já filtrada.
+  const sortedClients = [...filteredClients].sort((a, b) => {
+    let comparison = 0;
+    const valA = a[sortBy];
+    const valB = b[sortBy];
+
+    if (sortBy === 'name' || sortBy === 'gender' || sortBy === 'associatedColaborator') {
+        comparison = String(valA).localeCompare(String(valB));
+    } else if (sortBy === 'nif') {
+        comparison = Number(valA) - Number(valB);
+    } else if (sortBy === 'birthDate') {
+        const dateA = new Date(String(valA)).getTime();
+        const dateB = new Date(String(valB)).getTime();
+        comparison = (isNaN(dateA) ? 0 : dateA) - (isNaN(dateB) ? 0 : dateB);
+    }
+    return sortDirection === 'asc' ? comparison : comparison * -1;
+  });
+
   const cellStyle = {
     verticalAlign: 'middle',
   };
 
+  // --- RENDERIZAÇÃO DO COMPONENTE ---
   return (
     <div className="container-fluid mt-5 animate-fade-in">
+      {/* Cabeçalho da página com botão de atualizar e de adicionar cliente. */}
       <div className="header-row mb-3">
         <div className="left-column" onClick={handleRefresh} style={{ cursor: 'pointer' }}>
           {lastUpdated ? (
@@ -229,10 +236,8 @@ const Clients = () => {
         </div>
       </div>
 
-      {/* Alertas para adicionar cliente (usando successMessage e error já existentes no modal) */}
-      {/* Se quiseres que as mensagens de sucesso da adição apareçam aqui em vez de dentro do modal, podes ajustar */}
-      {/* Exemplo de como ficaria o alerta de sucesso de adição fora do modal: */}
-      {successMessage && !showModal && ( // Mostra apenas se o modal estiver fechado
+      {/* Alerta de sucesso, exibido fora do modal após a criação de um cliente. */}
+      {successMessage && !showModal && (
         <div className="alert alert-success d-flex align-items-center mb-3 alert-dismissible fade show" role="alert">
           <FontAwesomeIcon icon={faCheckCircle} className="me-2" />
           {successMessage}
@@ -240,12 +245,7 @@ const Clients = () => {
         </div>
       )}
 
-
-      {/* JSX removido: Alertas de deleteSuccessMessage e deleteError */}
-      {/* {deleteSuccessMessage && ( ... )} */}
-      {/* {deleteError && ( ... )} */}
-
-      {/* Modal estilizado para adicionar cliente */}
+      {/* Modal para adicionar um novo cliente. */}
       <div className={`modal fade ${showModal ? 'show d-block' : ''}`} tabIndex={-1} style={{ backgroundColor: 'rgba(0, 0, 0, 0.6)' }}>
         <div className="modal-dialog modal-dialog-centered custom-modal">
           <div className="modal-content">
@@ -309,13 +309,6 @@ const Clients = () => {
                   {error}
                 </div>
               )}
-              {/* A mensagem de sucesso para adição será mostrada fora do modal ou podes optar por mostrá-la aqui */}
-              {/* {successMessage && (
-                <div className="alert alert-success d-flex align-items-center mt-3">
-                  <FontAwesomeIcon icon={faCheckCircle} className="me-2" />
-                  {successMessage}
-                </div>
-              )} */}
             </div>
             <div className="modal-footer">
               <button
@@ -330,10 +323,8 @@ const Clients = () => {
           </div>
         </div>
       </div>
-
-      {/* JSX removido: Modal de confirmação de eliminação */}
-      {/* <div className={`modal fade ${showDeleteModal ? 'show d-block' : ''}`} ... > ... </div> */}
-
+         
+      {/* Barra de pesquisa para a tabela. */}           
       <div className="mb-4 d-flex gap-2">
         <input
           type="text"
@@ -344,10 +335,12 @@ const Clients = () => {
         />
       </div>
 
+      {/* Tabela de clientes. */}
       <div className="table-container">
         <div className="table-responsive w-100">
           <table className="table table-borderless table-hover bg-white shadow-sm w-100">
             <thead className="bg-light">
+              {/* Cabeçalhos da tabela clicáveis para ordenação. */}
               <tr>
                 <th style={cellStyle} onClick={() => handleSort('name')} className="cursor-pointer text-secondary">
                   Nome <FontAwesomeIcon icon={sortBy === 'name' ? (sortDirection === 'asc' ? faSortUp : faSortDown) : faSortDown} size="sm" />
@@ -369,6 +362,7 @@ const Clients = () => {
               </tr>
             </thead>
             <tbody>
+              {/* Renderização condicional do corpo da tabela. */}
               {loading ? (
                 <tr><td colSpan={7} className="text-center py-4 text-muted">A carregar...</td></tr>
               ) : fetchError ? (

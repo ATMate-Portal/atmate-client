@@ -6,26 +6,43 @@ import axios from 'axios';
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
+/**
+ * @interface ParamsDTO
+ * Define a estrutura de dados para os parâmetros de configuração recebidos da API.
+ */
 interface ParamsDTO {
   warningDays: string;
   urgencyDays: string;
 }
 
+// Obtém o token de autenticação diretamente do localStorage.
 const token = localStorage.getItem('authToken');
 
+/**
+ * @component Settings
+ * Página para a configuração de parâmetros da aplicação, como os dias
+ * para os estados de aviso e urgência.
+ */
 function Settings() {
+   // --- ESTADOS DO COMPONENTE ---
+  // Estados para os valores dos campos de input.
   const [warningDays, setWarningDays] = useState('');
   const [urgencyDays, setUrgencyDays] = useState('');
+
+   // Estados para gerir erros, sucesso, carregamento.
   const [error, setError] = useState<string | null>(null);
   const [saveLoading, setSaveLoading] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState<string | null>(null);
 
-  // Fetch current parameters from API
+  // --- OBTENÇÃO DE DADOS ---
+  // Utiliza o hook 'useApi' para ir buscar os parâmetros de configuração atuais da API.
   const { data: params, loading: paramsLoading, error: paramsError } = useApi<ParamsDTO>('atmate-gateway/config/getParams');
 
-  // Update state with fetched parameters
+  // É executado quando os dados dos parâmetros ('params') chegam da API.
+  // Popula os campos do formulário com os valores obtidos.
   useEffect(() => {
     if (params) {
+      // Valida se os valores recebidos são numéricos antes de os definir no estado.
       if (params.warningDays && /^\d+$/.test(params.warningDays)) {
         setWarningDays(params.warningDays);
       }
@@ -35,6 +52,7 @@ function Settings() {
     }
   }, [params]);
 
+  // Atualiza o estado 'warningDays'.
   const handleWarningDaysChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const value = event.target.value;
     if (/^\d*$/.test(value)) { // Apenas números inteiros
@@ -43,6 +61,7 @@ function Settings() {
     }
   };
 
+  // Atualiza o estado 'urgencyDays'.
   const handleUrgencyDaysChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const value = event.target.value;
     if (/^\d*$/.test(value)) { // Apenas números inteiros
@@ -51,6 +70,11 @@ function Settings() {
     }
   };
 
+  /**
+   * @function validateInputs
+   * Valida a lógica entre os dois campos de input (aviso vs. urgência)
+   * e se os valores são maiores que zero.
+   */
   const validateInputs = (warning: string, urgency: string) => {
     setError(null);
     const warningNum = parseInt(warning);
@@ -67,18 +91,23 @@ function Settings() {
     }
   };
 
+  /**
+   * @function handleSaveSettings
+   * Função assíncrona chamada para guardar os novos parametros.
+   */
   const handleSaveSettings = async () => {
     if (!warningDays || !urgencyDays) {
       setError('Por favor, preencha ambos os campos.');
       return;
     }
-    if (error) return;
+    if (error) return; // Não envia se já existir um erro de validação.
 
     setSaveLoading(true);
     setError(null);
     setSaveSuccess(null);
 
     try {
+      // Executa a requisição POST com o axios.
       const response = await axios.post(`${BASE_URL}atmate-gateway/config/setParams`, {
         warningDays,
         urgencyDays,
@@ -100,6 +129,7 @@ function Settings() {
     }
   };
 
+  // --- RENDERIZAÇÃO DO COMPONENTE ---
   return (
     <div className="container-fluid d-flex justify-content-center align-items-center mt-2">
       <div className="card shadow-lg animate-fade-in">
@@ -108,8 +138,8 @@ function Settings() {
           <hr className="mb-4 border-primary" />
 
           <div className="row">
+            {/* Coluna da esquerda com definições gerais*/}
             <div className="col-md-6">
-              {/* Coluna 1: Definições Gerais e Notificações */}
               <div className="mb-4">
                 <h5 className="mb-3"><i className="bi bi-gear me-2"></i> Geral</h5>
                 <div className="mb-3">
@@ -126,7 +156,7 @@ function Settings() {
                   </select>
                 </div>
               </div>
-
+              {/* ... Notificações ... */}
               <div className="mb-4">
                 <h5 className="mb-3"><i className="bi bi-bell me-2"></i> Notificações</h5>
                 <div className="form-check mb-2 custom-checkbox">
@@ -144,13 +174,13 @@ function Settings() {
               </div>
             </div>
 
-            {/* Divider Column */}
+            {/* Divisor vertical para ecrãs maiores. */}
             <div className="col-md-1 d-none d-md-flex justify-content-center">
               <div className="vertical-divider"></div>
             </div>
 
             <div className="col-md-5">
-              {/* Coluna 2: Parametrização de Avisos e Urgências */}
+              {/* Coluna da direita com as parametrizações editáveis. */}
               <div className="mb-4">
                 <h5 className="mb-3"><i className="bi bi-exclamation-triangle me-2"></i> Parametrização de Prazos</h5>
                 <div className="mb-3">
@@ -191,6 +221,7 @@ function Settings() {
                 </div>
               </div>
 
+              {/* Renderização condicional das mensagens de erro e sucesso. */}
               {error && <div className="alert alert-danger mt-3">{error}</div>}
               {saveSuccess && <div className="alert alert-success mt-3">{saveSuccess}</div>}
               {paramsError && <div className="alert alert-danger mt-3">Erro ao carregar configurações: {paramsError}</div>}

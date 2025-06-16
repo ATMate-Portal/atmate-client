@@ -1,4 +1,3 @@
-// src/pages/LoginPage/LoginPage.tsx
 import React, { useState, FormEvent, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -6,29 +5,43 @@ import { faEye, faEyeSlash } from '@fortawesome/free-solid-svg-icons';
 import './LoginPage.css';
 import { AuthContext } from '../api/AuthContext'; 
 
+/**
+ * @component LoginPage
+ * Componente que renderiza a página de login, gere o formulário de autenticação,
+ * valida os dados inseridos e comunica com a API para autenticar o utilizador.
+ */
 const LoginPage: React.FC = () => {
+  // --- ESTADOS DO COMPONENTE ---
+    // Estados para armazenar os valores dos campos do formulário.
   const [email, setEmail] = useState<string>('');
   const [password, setPassword] = useState<string>('');
+  // Estado para controlar a visibilidade da password.
   const [showPassword, setShowPassword] = useState<boolean>(false);
+  // Estados para armazenar as mensagens de erro de validação dos campos.
   const [emailError, setEmailError] = useState<string>('');
   const [passwordError, setPasswordError] = useState<string>('');
   const [loginError, setLoginError] = useState<string>('');
+
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
   const navigate = useNavigate();
   const authContext = useContext(AuthContext);
 
-  const FULL_API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/';
+  const FULL_API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8180/';
 
-  // Salvaguarda caso o AuthContext ainda não esteja disponível
   if (!authContext) {
-    // Isto não deve acontecer se AuthProvider estiver a envolver a aplicação corretamente.
-    console.error("AuthContext não está disponível. Verifica se AuthProvider está a envolver a tua aplicação.");
-    return <div>Erro: Contexto de Autenticação não encontrado.</div>;
+    console.error("AuthContext não está disponível.");
+    return <div>Erro: AuthContext não encontrado.</div>;
   }
 
   const { login: contextLogin } = authContext;
 
+  // --- FUNÇÕES DE VALIDAÇÃO ---
+    /**
+     * @function validateEmail
+     * Valida se o formato do email é válido.
+     * @returns {boolean} True se o email for válido, false caso contrário.
+     */
   const validateEmail = (emailToValidate: string): boolean => {
     if (!emailToValidate) {
       setEmailError('O email é obrigatório.');
@@ -43,6 +56,11 @@ const LoginPage: React.FC = () => {
     return true;
   };
 
+  /**
+     * @function validatePassword
+     * Valida se a password cumpre os requisitos mínimos (neste caso, o comprimento).
+     * @returns {boolean} True se a password for válida, false caso contrário.
+     */
   const validatePassword = (passwordToValidate: string): boolean => {
     if (!passwordToValidate) {
       setPasswordError('A password é obrigatória.');
@@ -56,12 +74,19 @@ const LoginPage: React.FC = () => {
     return true;
   };
 
+  /**
+     * @function handleSubmit
+     * Função chamada quando o formulário é submetido.
+     * Faz a validação, a chamada à API e o tratamento da resposta.
+     */
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    // Limpa os erros anteriores antes de uma nova tentativa.
     setEmailError('');
     setPasswordError('');
     setLoginError('');
 
+    // Executa a validação do lado do cliente.
     const isEmailValid = validateEmail(email);
     const isPasswordValid = validatePassword(password);
 
@@ -72,8 +97,7 @@ const LoginPage: React.FC = () => {
     setIsLoading(true);
 
     try {
-      // Substitui '/api/auth/login' pelo teu endpoint real da API
-      const response = await fetch(`${FULL_API_BASE_URL}atmate-gateway/auth/login`, { // <<< USA CRASES AQUI
+      const response = await fetch(`${FULL_API_BASE_URL}atmate-gateway/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
@@ -113,6 +137,8 @@ const LoginPage: React.FC = () => {
           <img src="/logo_azul.svg" alt="ATMate Logo" className="login-logo" />
         </div>
         <form onSubmit={handleSubmit} className="login-form" noValidate>
+
+          {/* Campo de Email */}
           <div className="form-group">
             <label htmlFor="email">Email</label>
             <input
@@ -130,6 +156,7 @@ const LoginPage: React.FC = () => {
             {emailError && <p id="email-error" className="error-message field-error">{emailError}</p>}
           </div>
 
+          {/* Campo de Password */}
           <div className="form-group password-group">
             <label htmlFor="password">Password</label>
             <div className="password-input-wrapper">
@@ -159,8 +186,17 @@ const LoginPage: React.FC = () => {
             {passwordError && <p id="password-error" className="error-message field-error">{passwordError}</p>}
           </div>
 
-          {loginError && <p className="error-message api-error">{loginError}</p>}
+           {loginError && (
+                        <p className="error-message api-error">
+                            {
+                                loginError.includes('401')
+                                    ? 'Credenciais inválidas.'
+                                    : loginError
+                            }
+                        </p>
+                    )}
 
+          {/* Botão de submit*/}
           <button type="submit" className="login-button" disabled={isLoading}>
             {isLoading ? (
               <>

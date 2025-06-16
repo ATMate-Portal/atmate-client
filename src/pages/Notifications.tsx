@@ -8,15 +8,13 @@ import {
     faEdit, faTrashAlt, faSearch, faTimesCircle, faExclamationTriangle, faCheckCircle,
     faFilter, faUsers, faGlobe, faList,
     faChevronLeft, faChevronRight, faRedo,
-    faEnvelopeOpen, // Icone adicionado para ver mensagens
-    faPaperPlane // Icone adicionado para forçar envio
+    faEnvelopeOpen, 
+    faPaperPlane
 } from '@fortawesome/free-solid-svg-icons';
-import useApi from '../hooks/useApi'; // Assume que este hook existe e funciona como esperado
-import { AuthContext } from "../api/AuthContext";
+import useApi from '../hooks/useApi';
 
-// Assumindo que VITE_API_BASE_URL está definido no seu ambiente .env
-const FULL_API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/'; // Fallback para desenvolvimento local
-
+// --- CONFIGURAÇÃO E CONSTANTES ---
+const FULL_API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8180/';
 const frequencies: string[] = ['Diário', 'Semanal', 'Mensal', 'Trimestral'];
 const ITEMS_PER_PAGE = 10;
 
@@ -30,9 +28,9 @@ const allNotificationTypes: Array<{ id: number; name: string }> = [
 type SelectOption = { value: number; label: string };
 const frequencyUnits: Record<string, string> = { 'Diário': 'dias', 'Semanal': 'semanas', 'Mensal': 'meses', 'Trimestral': 'trimestres' };
 
-// --- Interfaces API & Internas ---
-
-// Cliente (combinando campos de diferentes respostas para simplicidade)
+// --- INTERFACES DE DADOS (TIPOS) ---
+// Interfaces para tipificar os dados recebidos da API e os estados internos do componente.
+// Cliente 
 interface ApiClient {
     id: number;
     name: string;
@@ -143,7 +141,7 @@ interface ClientNotification {
 }
 // ----------------------------------------------------------------------
 
-// Coloque esta função no topo do seu ficheiro Notifications.js
+// Função auxiliar para normalizar strings (remover acentos e converter para minúsculas) para a pesquisa.
 const normalize = (str: string) => {
     if (!str) return ""; // Garante que não tenta normalizar null/undefined
     return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
@@ -151,30 +149,48 @@ const normalize = (str: string) => {
 
 const token = localStorage.getItem('authToken');
 
+/**
+ * @component Notifications
+ * Página de gestão de configurações de notificações. Permite criar, editar, apagar,
+ * ativar/desativar e visualizar o histórico de notificações.
+ * A lógica é complexa, dividida entre um formulário de criação/edição e uma tabela
+ * de configurações existentes.
+ */
 const Notifications: React.FC = () => {
-    // --- Estados ---
+    // --- ESTADOS DO COMPONENTE (useState) ---
+
     const initialFormData: FormDataState = useMemo(() => ({ // Usar useMemo para garantir objeto estável
         selectedNotificationTypeIds: [], selectedTaxTypeIds: [],
         frequency: frequencies[0], startPeriod: 1,
     }), []); // Dependência vazia, criado uma vez
 
+    // Estado principal do formulário.
     const [formData, setFormData] = useState<FormDataState>(initialFormData);
+    // Estados para a seleção de clientes no formulário.
     const [selectedClients, setSelectedClients] = useState<Client[]>([]);
     const [clientSelectionMode, setClientSelectionMode] = useState<ClientSelectionMode>('individual');
     const [clientSearchTerm, setClientSearchTerm] = useState('');
     const [showClientDropdown, setShowClientDropdown] = useState(false);
+
+    // Controla se o formulário está em modo de edição e qual grupo está a ser editado.
     const [editingGroupKey, setEditingGroupKey] = useState<string | null>(null);
+
+     // Estados de feedback da UI (atualização, loading, mensagens).
     const [lastUpdated, setLastUpdated] = useState<string | null>(null);
     const [isRefreshingData, setIsRefreshingData] = useState(false);
     const [refreshTrigger, setRefreshTrigger] = useState(0); // Para forçar re-fetch dos useApi
     const [createLoading, setCreateLoading] = useState<boolean>(false); // Loading do submit (criar/editar)
     const [isDeleting, setIsDeleting] = useState<boolean>(false); // Loading de apagar
     const [isTogglingStatus, setIsTogglingStatus] = useState<boolean>(false); // Loading de ativar/desativar
-    const [isForcingSend, setIsForcingSend] = useState<boolean>(false); // *** NOVO ESTADO: Loading para forçar envio ***
+    const [isForcingSend, setIsForcingSend] = useState<boolean>(false); // Loading para forçar envio 
     const [processingGroupId, setProcessingGroupId] = useState<string | null>(null); // ID do grupo em processamento (delete/toggle/forceSend)
     const [notificationMessage, setNotificationMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+    // Estados para a tabela e paginação.
     const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'inactive'>('all');
     const [currentPage, setCurrentPage] = useState(1);
+
+    // Estados para os modais.
     const [isClientModalOpen, setIsClientModalOpen] = useState(false); // Modal de lista de clientes
     const [clientsToShowInModal, setClientsToShowInModal] = useState<Array<ApiClient | null>>([]);
     const [modalGroupInfo, setModalGroupInfo] = useState<{ tax?: string, freq?: string, period?: number } | null>(null);
@@ -189,9 +205,6 @@ const Notifications: React.FC = () => {
 
     const [messagesApiEndpoint, setMessagesApiEndpoint] = useState<string | null>(null);
     const [fetchMessagesEnabled, setFetchMessagesEnabled] = useState<boolean>(false);
-    const [messagesRefreshTrigger, setMessagesRefreshTrigger] = useState(0); // <<< NOVO ESTADO
-
-
 
     // --- Hooks de Fetch de Dados ---
     const { data: allClientsData, loading: clientsLoading, error: clientsError } = useApi<Client[]>(`atmate-gateway/clients/getClients?refresh=${refreshTrigger}`, { enabled: true });
@@ -492,9 +505,7 @@ const Notifications: React.FC = () => {
                 payload, // 2. Corpo da requisição (data)
                     { // 3. Configurações da requisição (AxiosRequestConfig)
                         headers: {
-                            'Authorization': `Bearer ${token}` // Adiciona o header aqui
-                            // Poderia adicionar outros headers se necessário, por exemplo:
-                            // 'Content-Type': 'application/json', // Axios geralmente define isso automaticamente para POST com objeto JS
+                            'Authorization': `Bearer ${token}`
                         }
                     }
                 );
@@ -1005,7 +1016,7 @@ const Notifications: React.FC = () => {
             (isEditingSingleOriginalConfig ? 'Atualizar Configuração' : 'Atualizar Grupo') :
             'Guardar Nova Configuração');
 
-    // --- JSX de Renderização Principal ---
+    // --- Renderização Principal ---
     return (
         <Fragment>
             {/* Cabeçalho da Página */}

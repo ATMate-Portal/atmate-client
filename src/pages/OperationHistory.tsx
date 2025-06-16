@@ -10,49 +10,64 @@ import {
     faArrowRight,
 } from '@fortawesome/free-solid-svg-icons';
 
-// --- IMPORTS PARA REACT-DATEPICKER ---
 import DatePicker, { registerLocale, setDefaultLocale } from 'react-datepicker';
-import { pt } from 'date-fns/locale'; // Importa a localização portuguesa
-import 'react-datepicker/dist/react-datepicker.css'; // Importa o CSS base
-// --- FIM DOS IMPORTS ---
+import { pt } from 'date-fns/locale'; 
+import 'react-datepicker/dist/react-datepicker.css'; 
 
-import './Taxes.css'; // Assume que este CSS contém estilos relevantes
+import './Taxes.css'; 
 import useApi from '../hooks/useApi';
 
-// Registar e definir a localização portuguesa como padrão
+// Configura o 'react-datepicker' para usar a localização portuguesa por defeito.
 registerLocale('pt', pt);
 setDefaultLocale('pt');
 
-// Interface Operation
+// --- INTERFACES DE DADOS ---
+/**
+ * @interface Operation
+ * Define a estrutura de um único registo no histórico de operações.
+ */
 interface Operation {
     id: number;
     userId: number;
     username: string;
     userAction: string;
-    createdAt: string; // Vem como string (ISO 8601), será convertida para Date
+    createdAt: string;
 }
 
+/**
+ * @interface UniqueUser
+ * Define a estrutura para os dados de um utilizador único, usada para popular o filtro (select menu de user).
+ */
 interface UniqueUser {
     userId: number;
     username: string;
 }
 
-// Interface Page
+/**
+ * @interface Page
+ * Define a estrutura do objeto de paginação retornado pela API.
+ */
 interface Page<T> {
     content: T[];
-    pageable: any; // Simplificado para o exemplo
     last: boolean;
     totalPages: number;
     totalElements: number;
     size: number;
-    number: number;
-    sort: any; // Simplificado
+    number: number; // O número da página atual (0-indexed).
     first: boolean;
     numberOfElements: number;
     empty: boolean;
+    // As propriedades 'pageable' e 'sort' foram simplificadas, mas podem ser tipadas com mais detalhe.
+    pageable: any;
+    sort: any;
 }
 
-// --- FUNÇÃO HELPER PARA FORMATAR DATA PARA API ---
+
+/**
+ * @function formatDateForApi
+ * Formata um objeto Date para uma string no formato "YYYY-MM-DD",
+ * que é o formato esperado pela API nos parâmetros de data.
+ */
 const formatDateForApi = (date: Date | null): string => {
     if (!date) return '';
     const year = date.getFullYear();
@@ -60,44 +75,48 @@ const formatDateForApi = (date: Date | null): string => {
     const day = date.getDate().toString().padStart(2, '0');
     return `${year}-${month}-${day}`; // Formato YYYY-MM-DD
 };
-// --- FIM DA FUNÇÃO HELPER ---
 
+
+/**
+ * @component OperationHistory
+ * Página que exibe uma tabela paginada e filtrável do histórico de operações da aplicação.
+ */
 const OperationHistory: React.FC = () => {
+    // --- ESTADOS DO COMPONENTE (useState) ---
+    // Estados para controlo da UI, como a data da última atualização e o estado de refresh.
     const [lastUpdated, setLastUpdated] = useState<string | null>(null);
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+    // Estados para a paginação e ordenação da tabela.
     const [page, setPage] = useState(0);
     const [size] = useState(20);
     const [sortBy, setSortBy] = useState<keyof Operation>('createdAt');
     const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+
+    // Estados para os valores dos filtros.
     const [searchTerm, setSearchTerm] = useState('');
     const [filterUserId, setFilterUserId] = useState<string>('');
     const [filterUserAction, setFilterUserAction] = useState<string>('');
-    
-    // --- ESTADOS DE DATA ATUALIZADOS ---
     const [fromDate, setFromDate] = useState<Date | null>(null);
     const [toDate, setToDate] = useState<Date | null>(null);
-    // --- FIM DA ATUALIZAÇÃO ---
 
+    // Estado para guardar a lista de utilizadores para o dropdown, obtida de uma chamada à API separada.
     const [uniqueUsersForFilter, setUniqueUsersForFilter] = useState<UniqueUser[]>([]);
 
-    // <<< 1. API para obter a lista de utilizadores únicos baseada nos filtros de data
-    const uniqueUsersApiUrl = `atmate-gateway/operation-history/unique-users?${
-        fromDate ? `startDate=${formatDateForApi(fromDate)}` : ''
-    }${toDate ? `&endDate=${formatDateForApi(toDate)}` : ''}`;
+     // --- CHAMADAS À API (usando o hook useApi) ---
+
+    // 1. Chamada para obter a lista de utilizadores únicos.
+    const uniqueUsersApiUrl = `atmate-gateway/operation-history/unique-users`;
     
     // Este hook executa a chamada sempre que a URL (e, portanto, as datas) muda
     const { data: uniqueUsersData, loading: usersLoading } = useApi<UniqueUser[]>(uniqueUsersApiUrl);
 
-    const [estadoFilter, setEstadoFilter] = useState<string>('Todos'); // Mantido, mas não usado na API
-    const [filterType, setFilterType] = useState<string>('Todos'); // Mantido, mas não usado na API
+    const [estadoFilter, setEstadoFilter] = useState<string>('Todos'); 
+    const [filterType, setFilterType] = useState<string>('Todos');
 
-    // Mock data (ajustar se necessário)
-    const estadosDisponiveis = ['Todos', 'Pendente', 'Concluído', 'Cancelado'];
-    const tiposDeObrigacao = ['Todos', 'Tipo A', 'Tipo B', 'Tipo C'];
-
-    // --- API URL ATUALIZADA ---
-    // Usa formatDateForApi para enviar as datas no formato correto
+     // 2. Chamada principal para obter os dados da tabela (histórico de operações).
+    // Esta URL é reativa a todas as mudanças de filtros, paginação e ordenação.
     const apiUrl = `atmate-gateway/operation-history?page=${page}&size=${size}&sort=${sortBy},${sortDirection}${
         filterUserId ? `&userId=${filterUserId}` : ''
     }${filterUserAction ? `&userAction=${encodeURIComponent(filterUserAction)}` : ''}${
@@ -105,16 +124,17 @@ const OperationHistory: React.FC = () => {
     }${toDate ? `&endDate=${encodeURIComponent(formatDateForApi(toDate))}` : ''}${
         estadoFilter !== 'Todos' ? `&estado=${encodeURIComponent(estadoFilter)}` : ''
     }${filterType !== 'Todos' ? `&type=${encodeURIComponent(filterType)}` : ''}&refresh=${refreshTrigger}`;
-    // --- FIM DA ATUALIZAÇÃO ---
 
     const { data: pageData, loading, error } = useApi<Page<Operation>>(apiUrl);
 
+    //Executado sempre que os dados dos utilizadores únicos ('uniqueUsersData') mudam.
     useEffect(() => {
         if (uniqueUsersData) {
             setUniqueUsersForFilter(uniqueUsersData);
         }
     }, [uniqueUsersData]);
 
+    //executado sempre que os dados da tabela ('pageData') mudam.
     useEffect(() => {
         if (pageData && pageData.content.length > 0) {
             const now = new Date();
@@ -123,6 +143,7 @@ const OperationHistory: React.FC = () => {
         setIsRefreshing(false);
     }, [pageData]);
 
+    // --- HANDLERS ---
     const handleRefresh = () => {
         setIsRefreshing(true);
         setRefreshTrigger((prev) => prev + 1);
@@ -149,45 +170,8 @@ const OperationHistory: React.FC = () => {
         }
     };
 
-    const handleUserIdFilterChange = (event: ChangeEvent<HTMLSelectElement>) => {
-        setFilterUserId(event.target.value);
-        setPage(0);
-    };
-
-    const handleUserActionFilterChange = (event: ChangeEvent<HTMLSelectElement>) => {
-        setFilterUserAction(event.target.value);
-        setPage(0);
-    };
-
-    // --- HANDLERS DE DATA REMOVIDOS ---
-    // handleFromDateChange e handleToDateChange são substituídos pelo onChange do DatePicker
-
-    const handleFilterEstado = (event: ChangeEvent<HTMLSelectElement>) => {
-        setEstadoFilter(event.target.value);
-        setPage(0);
-    };
-
-    const handleFilterType = (event: ChangeEvent<HTMLSelectElement>) => {
-        setFilterType(event.target.value);
-        setPage(0);
-    };
-
-    const handleClearFilters = () => {
-        setFilterUserId('');
-        setFilterUserAction('');
-        setFromDate(null); // <-- ALTERADO PARA NULL
-        setToDate(null);   // <-- ALTERADO PARA NULL
-        setEstadoFilter('Todos');
-        setFilterType('Todos');
-        setSearchTerm('');
-        setPage(0);
-    };
-
-    const uniqueUserIdsWithUsernames = Array.from(
-        new Map(pageData?.content.map((op) => [op.userId, op.username])).entries()
-    ).sort((a, b) => a[0] - b[0]);
-
-    // O filtro client-side parece redundante se a API já filtra, mas mantido como estava.
+    // --- LÓGICA DE DADOS E RENDERIZAÇÃO ---
+    // A pesquisa por texto (`searchTerm`) é feita no lado do cliente sobre os dados da página atual.
     const filteredOperations = (pageData?.content || []).filter((operation) => {
         const searchRegex = new RegExp(searchTerm, 'i');
         return (
@@ -197,16 +181,19 @@ const OperationHistory: React.FC = () => {
         );
     });
 
+    // Calcula os itens de início e fim para a mensagem de paginação (ex: "A mostrar 1 - 20 de 100").
     const startItem = pageData ? (pageData.number * pageData.size) + 1 : 0;
     const endItem = pageData ? startItem + pageData.numberOfElements - 1 : 0;
 
     const cellStyle = { verticalAlign: 'middle' };
 
+    // Renderização condicional para os estados de carregamento e erro.
     if (loading) return <div className="container mt-5 text-center">A carregar histórico de operações...</div>;
     if (error) return <div className="container mt-5 text-center alert alert-danger">Erro ao obter o histórico de operações: {error.toString()}</div>;
 
     return (
         <div id="operation-history-page" className="container-fluid mt-5 animate-fade-in">
+            {/* Cabeçalho com o botão de atualização. */}
             <div className="d-flex justify-content-between align-items-center" >
                 {lastUpdated && (
                     <p className="text-muted mr-3" onClick={handleRefresh}>
@@ -217,11 +204,12 @@ const OperationHistory: React.FC = () => {
                 {!lastUpdated && <p className="text-muted mr-3">Aguardando dados...</p>}
             </div>
 
+            {/* Painel de filtros. */}
             <div className="d-flex justify-content-between align-items-center mb-3">
-                <div className="d-flex gap-2 align-items-center flex-wrap"> {/* Adicionado flex-wrap */}
+                <div className="d-flex gap-2 align-items-center flex-wrap">
+                    {/* Filtros de data */}
                     <div className="d-flex gap-2 align-items-center">
                         <label htmlFor="fromDate" className="form-label m-0 text-secondary small">De:</label>
-                        {/* --- DATEPICKER PARA FromDate --- */}
                         <DatePicker
                             selected={fromDate}
                             onChange={(date: Date | null) => { setFromDate(date); setPage(0); }}
@@ -236,11 +224,9 @@ const OperationHistory: React.FC = () => {
                             id="fromDate"
                             autoComplete="off"
                         />
-                        {/* --- FIM --- */}
                     </div>
                     <div className="d-flex gap-2 align-items-center">
                         <label htmlFor="toDate" className="form-label m-0 text-secondary small">Até:</label>
-                        {/* --- DATEPICKER PARA ToDate --- */}
                         <DatePicker
                             selected={toDate}
                             onChange={(date: Date | null) => { setToDate(date); setPage(0); }}
@@ -256,10 +242,10 @@ const OperationHistory: React.FC = () => {
                             id="toDate"
                             autoComplete="off"
                         />
-                        {/* --- FIM --- */}
                     </div>
 
                     <div>
+                        {/* Filtro de utilizador, populado dinamicamente. */}
                         <select 
                             id="userIdFilter" 
                             className="form-select form-select-sm" 
@@ -274,7 +260,7 @@ const OperationHistory: React.FC = () => {
                             ))}
                         </select>
                     </div>
-                    {/* Filtro de Ações Comentado (como no original) */}
+                    {/* Barra de pesquisa. */}
                 </div>
                 <div className="d-flex justify-content-end">
                     <div className="position-relative d-flex align-items-center search-bar-container">
@@ -284,6 +270,7 @@ const OperationHistory: React.FC = () => {
                 </div>
             </div>
 
+            {/* Tabela de dados. */}
             <div className="table-container">
                 <div className="table-responsive w-100">
                     <table className="table table-borderless table-hover bg-white shadow-sm w-100" aria-label="Histórico de Operações">
@@ -317,7 +304,7 @@ const OperationHistory: React.FC = () => {
                 </div>
             </div>
 
-            {/* Pagination Controls */}
+            {/* Controlos de paginação. */}
             {pageData && pageData.totalPages > 0 && (
                 <div className="d-flex justify-content-between align-items-center mt-3">
                     <div>
