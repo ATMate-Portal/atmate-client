@@ -154,6 +154,7 @@ const Sidebar: React.FC = () => {
                         className="nav-link-custom"
                         role="button" // Melhora a acessibilidade, indicando que é um elemento interativo.
                         title="Terminar Sessão"
+                        id="logoutText"
                     >
                         <i className="fas fa-sign-out-alt"></i>
                         {!isCollapsed && <span style={{ marginLeft: '0.5rem' }}>SAIR</span>}

@@ -30,6 +30,8 @@
     "@types/react-dom": "^18.3.5",
     "@types/react-select": "^5.0.0",
     "@vitejs/plugin-react": "^4.3.4",
+    "cypress": "^14.5.0",
+    "cypress-xpath": "^2.0.1",
     "eslint": "^9.17.0",
     "eslint-plugin-react-hooks": "^5.0.0",
     "eslint-plugin-react-refresh": "^0.4.16",
