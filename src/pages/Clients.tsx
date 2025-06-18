@@ -23,6 +23,7 @@ interface Client {
 }
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL;
+const token = localStorage.getItem('authToken');
 
 /**
  * @component Clients
@@ -141,6 +142,7 @@ const Clients = () => {
       const response = await axios.post(apiUrl, clientData, {
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
         },
       });
 
