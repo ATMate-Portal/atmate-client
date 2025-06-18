@@ -21,6 +21,7 @@ interface ClientDetails { id: number; name: string; nif: number; gender: string;
 
 // --- CONFIGURAÇÃO ---
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+const token = localStorage.getItem('authToken');
 
 /**
  * @component ClientProfilePage
@@ -184,7 +185,7 @@ export default function ClientProfilePage() {
                 const response = await fetch(`${API_BASE_URL}atmate-gateway/clients/${id}`, {
                     method: 'DELETE',
                     headers: { 'Content-Type': 'application/json', 
-                               'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
+                               'Authorization': `Bearer ${token}`
                     },
                 });
                 if (!response.ok) {
