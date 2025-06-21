@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import useApi from '../hooks/useApi'; 
-import TaxesTable from '../components/TaxesTable'; 
+import useApi from '../hooks/useApi';
+import TaxesTable from '../components/TaxesTable';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
     faArrowLeft, faMapMarkerAlt, faPhone, faFileInvoiceDollar,
     faUser, faIdCard, faCalendar, faGlobe, faBuilding, faSpinner,
-    faExclamationTriangle, faSyncAlt, faTrashAlt, faBell
+    faExclamationTriangle, faSyncAlt, faTrashAlt, faBell, faDownload // Importar o novo ícone
 } from '@fortawesome/free-solid-svg-icons';
 
 import './ClientProfilePage.css';
@@ -35,7 +35,7 @@ export default function ClientProfilePage() {
     const navigate = useNavigate();
 
     // Chamada à API para obter os detalhes do cliente com base no ID.
-    const { data: client, loading, error } = useApi<ClientDetails>(id ? `atmate-gateway/clients/${id}` : '');
+    const { data: client, loading, error, refreshData } = useApi<ClientDetails>(id ? `atmate-gateway/clients/${id}` : '');
 
     // Estados para controlo da UI (atualização, secção ativa, etc.).
     const [lastUpdated, setLastUpdated] = useState<string | null>(null);
@@ -44,6 +44,7 @@ export default function ClientProfilePage() {
     const [isDeleting, setIsDeleting] = useState(false);
     const [deleteError, setDeleteError] = useState<string | null>(null);
     const [isTaxModalOpen, setIsTaxModalOpen] = useState(false); // Controla se o modal da tabela de impostos está aberto.
+    const [isScraping, setIsScraping] = useState(false); // NOVO ESTADO: Para controlar o carregamento do scraping
 
     // Refs para interagir com elementos do DOM e controlar comportamentos.
     const headerRef = useRef<HTMLElement>(null); // Referência ao cabeçalho fixo.
@@ -62,11 +63,11 @@ export default function ClientProfilePage() {
         if (!dateString) return 'N/A';
         try {
             return new Date(dateString).toLocaleString('pt-PT', {
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit',
-            hour: '2-digit',
-            minute: '2-digit',
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
             });
         } catch (e) {
             return dateString;
@@ -83,7 +84,7 @@ export default function ClientProfilePage() {
             tempElement.innerHTML = fullHtmlString;
             const detailsDiv = tempElement.querySelector('div.details');
             if (detailsDiv) {
-            return detailsDiv.outerHTML;
+                return detailsDiv.outerHTML;
             }
             return null;
         } catch (error) {
@@ -123,7 +124,7 @@ export default function ClientProfilePage() {
         // Callback executado quando uma secção entra ou sai da área de visão.
         const observerCallback = (entries: IntersectionObserverEntry[]) => {
             if (isScrollingProgrammatically.current || isTaxModalOpen) return;
-            // Encontra a entrada mais visível no ecrã.    
+            // Encontra a entrada mais visível no ecrã. 
             let currentVisibleEntry: IntersectionObserverEntry | null = null;
             for (const entry of entries) {
                 if (entry.isIntersecting) {
@@ -176,6 +177,43 @@ export default function ClientProfilePage() {
         }
     }, [id, isRefreshing]);
 
+    const handleForceScrape = useCallback(async () => {
+        if (!id || isScraping) return;
+
+        const confirmation = window.confirm(`Tem a certeza que deseja forçar o atualização dos dados para o cliente "${client?.name}"? Isso pode levar algum tempo.`);
+        if (confirmation) {
+            setIsScraping(true);
+            setDeleteError(null);
+            try {
+
+                const response = await fetch(`${API_BASE_URL}atmate-gateway/clients/force/${id}`, {
+                    method: 'POST', // Geralmente é um POST ou PUT para ações
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    // body: JSON.stringify({ force: true }) // Se a API precisar de um corpo para forçar
+                });
+
+                if (!response.ok) {
+                    let errorMsg = `Erro ${response.status}: ${response.statusText}`;
+                    try {
+                        const errorBody = await response.json();
+                        errorMsg = errorBody.message || errorBody.error || JSON.stringify(errorBody) || errorMsg;
+                    } catch (e) { /* Ignora */ }
+                    throw new Error(errorMsg);
+                }
+
+                alert(`Scraping de dados iniciado com sucesso para o cliente "${client?.name}". Os dados serão atualizados em breve.`);
+            } catch (err: any) {
+                console.error("Erro ao forçar scraping:", err);
+                setDeleteError(err.message || 'Ocorreu um erro desconhecido ao forçar o scraping.');
+            } finally {
+                setIsScraping(false);
+            }
+        }
+    }, [id, client?.name, isScraping, refreshData]); // Adicione refreshData às dependências
+
     const handleDeleteClient = useCallback(async () => {
         const confirmation = window.confirm(`Tem a certeza que deseja apagar o cliente "${client?.name}" (ID: ${id})? Esta ação não pode ser revertida.`);
         if (confirmation && id) {
@@ -184,7 +222,7 @@ export default function ClientProfilePage() {
             try {
                 const response = await fetch(`${API_BASE_URL}atmate-gateway/clients/${id}`, {
                     method: 'DELETE',
-                    headers: { 'Content-Type': 'application/json', 
+                    headers: { 'Content-Type': 'application/json',
                                'Authorization': `Bearer ${token}`
                     },
                 });
@@ -317,24 +355,35 @@ export default function ClientProfilePage() {
                         </nav>
                         {/* Ações e informação de atualização */}
                         <div className="header-actions-info">
-                            {lastUpdated && !isRefreshing && (
+                            {lastUpdated && !isRefreshing && !isScraping && (
                                 <span className="last-updated-info" title={`Atualizado em ${new Date(lastUpdated).toLocaleString('pt-PT')}`}>
                                     Atualizado {formattedLastUpdated}
                                 </span>
                             )}
-                            {isRefreshing && (
+                            {(isRefreshing || isScraping) && (
                                 <span className="last-updated-info">
-                                    <FontAwesomeIcon icon={faSpinner} spin /> Atualizando...
+                                    <FontAwesomeIcon icon={faSpinner} spin /> {isScraping ? 'A iniciar scraping...' : 'Atualizando...'}
                                 </span>
                             )}
-                            <button onClick={handleRefresh} className="btn btn-icon btn-tertiary" aria-label="Atualizar" disabled={isRefreshing || isDeleting} title="Atualizar Dados">
+                            {/* NOVO BOTÃO DE SCRAPING */}
+                            <button
+                                onClick={handleForceScrape}
+                                className="btn btn-icon btn-info" // Use uma classe apropriada para o estilo
+                                aria-label="Forçar Scraping de Dados"
+                                disabled={isScraping || isRefreshing || isDeleting || !client}
+                                title="Forçar Scraping de Dados do Cliente"
+                            >
+                                <FontAwesomeIcon icon={isScraping ? faSpinner : faDownload} spin={isScraping} />
+                            </button>
+
+                            <button onClick={handleRefresh} className="btn btn-icon btn-tertiary" aria-label="Atualizar" disabled={isRefreshing || isDeleting || isScraping} title="Atualizar Dados">
                                 <FontAwesomeIcon icon={faSyncAlt} />
                             </button>
                             <button
                                 onClick={handleDeleteClient}
                                 className="btn btn-icon btn-danger-subtle"
                                 aria-label="Apagar Cliente"
-                                disabled={isDeleting || isRefreshing || !client}
+                                disabled={isDeleting || isRefreshing || isScraping || !client}
                                 title="Apagar Cliente"
                             >
                                 <FontAwesomeIcon icon={isDeleting ? faSpinner : faTrashAlt} spin={isDeleting} />
@@ -342,7 +391,7 @@ export default function ClientProfilePage() {
                         </div>
                     </div>
                 </header>
-                {/* Conteúdo principal da página */}            
+                {/* Conteúdo principal da página */}
                 <main className="profile-content" style={{ paddingTop: `${headerHeight}px` }} key={id}>
                     {client && (
                         <div className="profile-subheader">
@@ -351,15 +400,15 @@ export default function ClientProfilePage() {
                         </div>
                     )}
 
-                    {loading && client && ( // Loading de atualização
+                    {((loading && !!client) || isScraping) && ( // Loading de atualização ou scraping
                         <div className="inline-message loading">
-                            <FontAwesomeIcon icon={faSpinner} spin /> A atualizar dados...
+                            <FontAwesomeIcon icon={faSpinner} spin /> {isScraping ? 'A iniciar scraping e atualizar dados...' : 'A atualizar dados...'}
                         </div>
                     )}
                     {error && !loading && client && (
                         <div className="inline-message error">
                             <FontAwesomeIcon icon={faExclamationTriangle} /> Erro ao carregar atualizações ({error ? String(error) : 'Tente novamente'}).
-                            <button onClick={handleRefresh} className="btn btn-danger btn-xs ml-2" disabled={isRefreshing || isDeleting}>
+                            <button onClick={handleRefresh} className="btn btn-danger btn-xs ml-2" disabled={isRefreshing || isDeleting || isScraping}>
                                 Tentar Novamente
                             </button>
                         </div>
@@ -406,7 +455,7 @@ export default function ClientProfilePage() {
                                 </div>
                             </section>
 
-                            {/* Secção de Contactos */}        
+                            {/* Secção de Contactos */}
                             <section id="contactos" className="profile-section">
                                 <header className="section-header"> <h2><FontAwesomeIcon icon={faPhone} /> Contactos</h2> </header>
                                 <div className="section-content content-no-padding">
@@ -421,7 +470,7 @@ export default function ClientProfilePage() {
                                 </div>
                             </section>
 
-                            {/* Secção de Impostos */}        
+                            {/* Secção de Impostos */}
                             <section id="impostos" className="profile-section">
                                 <header className="section-header"> <h2><FontAwesomeIcon icon={faFileInvoiceDollar} /> Impostos e Obrigações</h2> </header>
                                 <div className="section-content">
@@ -431,7 +480,7 @@ export default function ClientProfilePage() {
                                             loading={loading && !!client}
                                             error={error ? 'Erro ao carregar' : ''}
                                             onRefresh={handleRefresh}
-                                            lastUpdated={formattedLastUpdated} // <-- Usa a prop memoizada
+                                            lastUpdated={formattedLastUpdated}
                                             isRefreshing={isRefreshing}
                                             onModalOpen={handleModalOpen}
                                             onModalClose={handleModalClose}
@@ -446,7 +495,7 @@ export default function ClientProfilePage() {
                                 </div>
                             </section>
 
-                            {/* Secção de Notificações */}        
+                            {/* Secção de Notificações */}
                             <section id="notifications" className="profile-section">
                                     <header className="section-header"> <h2><FontAwesomeIcon icon={faBell} /> Notificações</h2> </header>
                                         <div className="messages-history-table-container">
@@ -464,7 +513,7 @@ export default function ClientProfilePage() {
                                             <tbody>
                                                 {client.notifications.length === 0 ? (
                                                 <tr>
-                                                    <td colSpan={5} style={{ textAlign: 'center' }}> 
+                                                    <td colSpan={5} style={{ textAlign: 'center' }}>
                                                     Não existem notificações para apresentar.
                                                     </td>
                                                 </tr>
@@ -494,7 +543,7 @@ export default function ClientProfilePage() {
                                                     }
 
                                                     return (
-                                                    <tr key={notification.clientId + '-' + index}> 
+                                                    <tr key={notification.clientId + '-' + index}>
                                                         <td data-label="Cliente (ID)">{notification.clientId}</td>
                                                         <td data-label="Data Envio">{formatDateTimeForTable(notification.sendDate)}</td>
                                                         <td data-label="Status">
@@ -513,7 +562,7 @@ export default function ClientProfilePage() {
                                             </tbody>
                                             </table>
                                         </div>
-                            </section>            
+                            </section>
 
                         </>
                     )}
