@@ -544,7 +544,7 @@ export default function ClientProfilePage() {
 
                                                     return (
                                                     <tr key={notification.clientId + '-' + index}>
-                                                        <td data-label="Cliente (ID)">{notification.clientId}</td>
+                                                        <td data-label="Cliente">{notification.clientId}</td>
                                                         <td data-label="Data Envio">{formatDateTimeForTable(notification.sendDate)}</td>
                                                         <td data-label="Status">
                                                         <span className={`status-message ${notification.status?.toLowerCase()}`}>
