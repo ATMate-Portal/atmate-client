@@ -21,7 +21,6 @@ interface ClientDetails { id: number; name: string; nif: number; gender: string;
 
 // --- CONFIGURAÇÃO ---
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
-const token = localStorage.getItem('authToken');
 
 /**
  * @component ClientProfilePage
@@ -35,7 +34,7 @@ export default function ClientProfilePage() {
     const navigate = useNavigate();
 
     // Chamada à API para obter os detalhes do cliente com base no ID.
-    const { data: client, loading, error, refreshData } = useApi<ClientDetails>(id ? `atmate-gateway/clients/${id}` : '');
+    const { data: client, loading, error } = useApi<ClientDetails>(id ? `atmate-gateway/clients/${id}` : '');
 
     // Estados para controlo da UI (atualização, secção ativa, etc.).
     const [lastUpdated, setLastUpdated] = useState<string | null>(null);
@@ -185,6 +184,7 @@ export default function ClientProfilePage() {
             setIsScraping(true);
             setDeleteError(null);
             try {
+                const token = localStorage.getItem('authToken');
 
                 const response = await fetch(`${API_BASE_URL}atmate-gateway/clients/force/${id}`, {
                     method: 'POST', // Geralmente é um POST ou PUT para ações
@@ -212,7 +212,7 @@ export default function ClientProfilePage() {
                 setIsScraping(false);
             }
         }
-    }, [id, client?.name, isScraping, refreshData]); // Adicione refreshData às dependências
+    }, [id, client?.name, isScraping]); // Removido refreshData das dependências
 
     const handleDeleteClient = useCallback(async () => {
         const confirmation = window.confirm(`Tem a certeza que deseja apagar o cliente "${client?.name}" (ID: ${id})? Esta ação não pode ser revertida.`);
@@ -220,6 +220,8 @@ export default function ClientProfilePage() {
             setIsDeleting(true);
             setDeleteError(null);
             try {
+                const token = localStorage.getItem('authToken');
+
                 const response = await fetch(`${API_BASE_URL}atmate-gateway/clients/${id}`, {
                     method: 'DELETE',
                     headers: { 'Content-Type': 'application/json',
