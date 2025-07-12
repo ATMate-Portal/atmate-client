@@ -1,50 +1,115 @@
-# React + TypeScript + Vite
+# 💻 ATMate Client Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+O `atmate-client-frontend` é a aplicação web que serve como **interface de utilizador principal** do ecossistema ATMate. Desenvolvida em **React** e **TypeScript**, permite que contabilistas e outros profissionais consultem os dados centralizados da AT de forma simples, clara e eficiente.
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## ✨ Funcionalidades
 
-## Expanding the ESLint configuration
+### 📅 Visualização de Dados de Clientes
 
-If you are developing a production application, we recommend updating the configuration to enable type aware lint rules:
+- Lista de clientes com informações básicas.
+- Detalhes completos: NIF, moradas, contactos, etc.
 
-- Configure the top-level `parserOptions` property like this:
+### 📋 Consulta de Impostos
 
-```js
-export default tseslint.config({
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
+- Lista de impostos associados a cada cliente.
+- Detalhes: identificador, valor, estado, prazo de pagamento.
+- Destaque de impostos urgentes ou próximos do vencimento.
+
+### 💻 Interface Responsiva
+
+- Experiência fluida em diferentes resoluções (Computador).
+
+### 🛠️ Integração com API Gateway
+
+- Consumo assíncrono via Axios de endpoints REST expostos pelo `atmate-gateway`.
+
+---
+
+## 🚀 Tecnologias Utilizadas
+
+### Frontend
+
+- `React`, `TypeScript`, `Vite`
+- `Axios`, `React Router`
+
+---
+
+## 📆 Estrutura do Projeto
+
+```bash
+atmate-client-frontend/
+├── public/                  # Ficheiros estáticos
+├── src/
+│   ├── api/                 # Autenticação e autorização
+│   ├── components/          # Componentes reutilizáveis
+│   ├── config/              # Configuração de ambiente de execução
+│   ├── hooks/               # Custom hooks (useApi)
+│   ├── pages/               # Páginas principais
+│   ├── routes/              # Configuração de Rotas
+│   ├── App.tsx
+│   ├── index.css
+│   └── main.tsx
+├── package.json
+├── tsconfig.json
+├── vite.config.ts
+└── README.md
 ```
 
-- Replace `tseslint.configs.recommended` to `tseslint.configs.recommendedTypeChecked` or `tseslint.configs.strictTypeChecked`
-- Optionally add `...tseslint.configs.stylisticTypeChecked`
-- Install [eslint-plugin-react](https://github.com/jsx-eslint/eslint-plugin-react) and update the config:
+---
 
-```js
-// eslint.config.js
-import react from 'eslint-plugin-react'
+## 🛠️ Como Configurar e Executar
 
-export default tseslint.config({
-  // Set the react version
-  settings: { react: { version: '18.3' } },
-  plugins: {
-    // Add the react plugin
-    react,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended rules
-    ...react.configs.recommended.rules,
-    ...react.configs['jsx-runtime'].rules,
-  },
-})
+### ✅ Pré-requisitos
+
+- `Node.js` (versão LTS)
+- `npm` ou `yarn`
+- Serviço `atmate-gateway` em execução
+
+---
+
+### 1️⃣ Clonar o Repositório
+
+```bash
+git clone https://github.com/ATMate-Portal/atmate-client
 ```
+
+---
+
+### 2️⃣ Instalar Dependências
+
+```bash
+npm install
+```
+
+---
+
+### 3️⃣ Configurar Ambiente
+
+Criar ficheiro `.env` com a URL do Gateway:
+
+```env
+VITE_API_BASE_URL=http://localhost:8180/
+```
+
+---
+
+### 4️⃣ Executar Localmente
+
+```bash
+npm run dev
+# ou
+yarn dev
+```
+
+- Aceder via: [http://localhost](http://localhost)
+
+---
+
+## 🧪 Testes (E2E com Cypress)
+
+```bash
+npm run cypress:open  # Interface interativa
+```
+
