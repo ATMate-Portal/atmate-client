@@ -281,7 +281,7 @@ const Notifications: React.FC = () => {
     const getSubmitBody = useCallback((): CreateNotificationRequestPayload | UpdateNotificationRequestPayload | null => {
         if (!editingGroupKey) { // MODO CRIAÇÃO
             const clientIdsToSend = clientSelectionMode === 'all'
-                ? [] // Backend deve interpretar lista vazia como "todos" - se precisar de todos os IDs: allClients.map(c => c.id)
+                ? allClients.map(c => c.id) // Backend deve interpretar lista vazia como "todos" - se precisar de todos os IDs: allClients.map(c => c.id)
                 : selectedClients.map(c => c.id);
 
             // Validação básica antes de retornar
@@ -321,7 +321,7 @@ const Notifications: React.FC = () => {
                 active: groupBeingEdited.active,
             };
         }
-    }, [editingGroupKey, formData, clientSelectionMode, selectedClients, groupedConfigs]); // Removido allClients se backend trata lista vazia
+    }, [editingGroupKey, formData, clientSelectionMode, selectedClients, groupedConfigs, allClients]); // Removido allClients se backend trata lista vazia
 
     // Atualiza o timestamp da última atualização quando todos os dados carregam
     useEffect(() => {
@@ -383,8 +383,8 @@ const Notifications: React.FC = () => {
                 if (axios.isAxiosError(messagesApiError as any)) {
                     const axiosErr = messagesApiError as unknown as AxiosError<ApiResponseData>;
                     msg = axiosErr.response?.data?.message || axiosErr.response?.data?.error || axiosErr.message;
-                } else if (messagesApiError instanceof Error) {
-                    msg = messagesApiError.message;
+                } else if ((messagesApiError as any) instanceof Error) {
+                    msg = (messagesApiError as unknown as Error).message;
                 } else if (typeof messagesApiError === 'string') {
                     msg = messagesApiError;
                 }
@@ -620,8 +620,8 @@ const Notifications: React.FC = () => {
 
         // Se houve sucesso, reseta o form e atualiza a lista
         if (successCount > 0) {
-            resetFormAndState();
             setRefreshTrigger(p => p + 1);
+            resetFormAndState();
         }
     }, [editingGroupKey, getSubmitBody, resetFormAndState, groupedConfigs]); // Removido FULL_API_BASE_URL
 
